@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="calculate_xytheta_correction">
+<interface>
+<ic>
+<par name="BoardX" base_type="ctrl" dimension="0"/>
+<par name="BoardY" base_type="ctrl" dimension="0"/>
+<par name="BoardThetaDeg" base_type="ctrl" dimension="0"/>
+<par name="ToolX" base_type="ctrl" dimension="0"/>
+<par name="ToolY" base_type="ctrl" dimension="0"/>
+<par name="ToolThetaDeg" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="CorrectionX" base_type="ctrl" dimension="0"/>
+<par name="CorrectionY" base_type="ctrl" dimension="0"/>
+<par name="CorrectionThetaDeg" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* Board 与 Tool 的原点必须代表相互对应的几何基准。</c>
+<l>CorrectionX := BoardX - ToolX</l>
+<l>CorrectionY := BoardY - ToolY</l>
+<l>CorrectionThetaDeg := BoardThetaDeg - ToolThetaDeg</l>
+<l>while (CorrectionThetaDeg &gt; 180)</l>
+<l>    CorrectionThetaDeg := CorrectionThetaDeg - 360</l>
+<l>endwhile</l>
+<l>while (CorrectionThetaDeg &lt;= -180)</l>
+<l>    CorrectionThetaDeg := CorrectionThetaDeg + 360</l>
+<l>endwhile</l>
+<l>return ()</l>
+</body>
+</procedure>
+</hdevelop>
+

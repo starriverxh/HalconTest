@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* =====================================================================</c>
+<c>* 单文件教学版：无需设置外部过程路径，直接在 HDevelop 按 F5 运行。</c>
+<c>* 本文件相当于 C# 的 Program.cs，其中下方局部过程相当于可复用方法。</c>
+<c>* =====================================================================</c>
+<l>dev_update_off ()</l>
+<l>dev_close_window ()</l>
+<c>* Step 1：HALCON生成一张接近PCB产品的彩色模拟图。</c>
+<l>generate_synthetic_pcb (ProductImage, GroundTruthRows, GroundTruthColumns)</l>
+<l>write_image (ProductImage, 'png', 0, 'C:/Users/hcg/Documents/HalconTest/data/offline/synthetic_pcb_good.png')</l>
+<c>* Step 2：彩色图转灰度。以后接相机时，从这里开始仍可继续使用。</c>
+<l>rgb1_to_gray (ProductImage, GrayImage)</l>
+<c>* Step 3：定位一排PCB孔。输出按列坐标从左到右排序。</c>
+<l>locate_pcb_holes_local (GrayImage, HoleRegions, 0, 65, 15, 22, 0.85, HoleRows, HoleColumns, HoleRadii, HoleScores)</l>
+<l>HoleCount := |HoleRows|</l>
+<c>* Step 4：用九点建立图像(column,row)到机器(X,Y)的仿射关系。</c>
+<l>ImageRows := [100,100,100,300,300,300,500,500,500]</l>
+<l>ImageColumns := [100,450,800,100,450,800,100,450,800]</l>
+<l>MachineX := 0.020 * ImageColumns + 0.0005 * ImageRows + 5.0</l>
+<l>MachineY := -0.0004 * ImageColumns + 0.020 * ImageRows + 10.0</l>
+<c></c>
+<c>* Step 5：将检测到的孔中心转换为机器坐标。</c>
+<l>transform_image_points_local (HomMat2D, HoleRows, HoleColumns, HoleMachineX, HoleMachineY)</l>
+<c>* Step 6：示例板端目标与上视相机测得的针排TCP，计算XYT补偿。</c>
+<l>BoardCenterX := mean(HoleMachineX)</l>
+<l>BoardCenterY := mean(HoleMachineY)</l>
+<l>BoardThetaDeg := 0.025</l>
+<l>ToolCenterX := BoardCenterX - 0.018</l>
+<l>ToolCenterY := BoardCenterY + 0.012</l>
+<l>ToolThetaDeg := 0.019</l>
+<l>calculate_xytheta_correction_local (BoardCenterX, BoardCenterY, BoardThetaDeg, ToolCenterX, ToolCenterY, ToolThetaDeg, CorrectionX, CorrectionY, CorrectionThetaDeg)</l>
+<c>* Step 7：显示产品图、检测结果和关键数值。</c>
+<l>dev_open_window (0, 0, 1000, 650, 'black', WindowHandle)</l>
+<l>dev_set_part (0, 0, 599, 999)</l>
+<l>dev_display (ProductImage)</l>
+<l>dev_set_color ('red')</l>
+<l>dev_set_draw ('margin')</l>
+<l>dev_set_line_width (3)</l>
+<l>dev_display (HoleRegions)</l>
+<l>gen_cross_contour_xld (HoleCenters, HoleRows, HoleColumns, 24, 0.785398)</l>
+<l>dev_set_color ('yellow')</l>
+<l>dev_display (HoleCenters)</l>
+<l>ResultText := ['HALCON PCB pin insertion learning demo','Detected holes: ' + HoleCount,'Calibration RMSE: ' + CalibrationRMSE$'.6f' + ' mm','Calibration max error: ' + CalibrationMaxError$'.6f' + ' mm','Correction X: ' + CorrectionX$'.3f' + ' mm','Correction Y: ' + CorrectionY$'.3f' + ' mm','Correction theta: ' + CorrectionThetaDeg$'.3f' + ' deg','Synthetic image saved to data/offline/synthetic_pcb_good.png']</l>
+<l>dev_disp_text (ResultText, 'window', 15, 15, 'white', 'box', 'true')</l>
+<l>DemoPassed := HoleCount == 5 and CalibrationMaxError &lt; 0.000001 and fabs(CorrectionX - 0.018) &lt; 0.000001 and fabs(CorrectionY + 0.012) &lt; 0.000001</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+<procedure name="generate_synthetic_pcb">
+<interface>
+<oo>
+<par name="ProductImage" base_type="iconic" dimension="0"/>
+</oo>
+<oc>
+<par name="GroundTruthRows" base_type="ctrl" dimension="0"/>
+<par name="GroundTruthColumns" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* 生成1000x600彩色PCB：绿油背景、铜线路、银色焊盘、黑色通孔和基准点。</c>
+<l>gen_image_const (Red, 'byte', 1000, 600)</l>
+<l>gen_image_const (Green, 'byte', 1000, 600)</l>
+<l>gen_image_const (Blue, 'byte', 1000, 600)</l>
+<l>gen_rectangle1 (Board, 35, 35, 565, 965)</l>
+<l>paint_region (Board, Red, Red1, 24, 'fill')</l>
+<l>paint_region (Board, Green, Green1, 105, 'fill')</l>
+<l>paint_region (Board, Blue, Blue1, 62, 'fill')</l>
+<c>* 铜色水平线路。</c>
+<l>gen_rectangle1 (Trace1, 270, 90, 276, 910)</l>
+<l>gen_rectangle1 (Trace2, 324, 90, 330, 910)</l>
+<l>union2 (Trace1, Trace2, Traces)</l>
+<l>paint_region (Traces, Red1, Red2, 188, 'fill')</l>
+<l>paint_region (Traces, Green1, Green2, 126, 'fill')</l>
+<l>paint_region (Traces, Blue1, Blue2, 38, 'fill')</l>
+<c>* 五个目标孔。外圆模拟金属焊盘，内圆是真正的暗孔。</c>
+<l>GroundTruthRows := [300,300,300,300,300]</l>
+<l>GroundTruthColumns := [190,345,500,655,810]</l>
+<l>gen_circle (OuterPads, GroundTruthRows, GroundTruthColumns, [34,34,34,34,34])</l>
+<l>paint_region (OuterPads, Red2, Red3, 205, 'fill')</l>
+<l>paint_region (OuterPads, Green2, Green3, 205, 'fill')</l>
+<l>paint_region (OuterPads, Blue2, Blue3, 185, 'fill')</l>
+<l>gen_circle (InnerHoles, GroundTruthRows, GroundTruthColumns, [18,18,18,18,18])</l>
+<l>paint_region (InnerHoles, Red3, Red4, 12, 'fill')</l>
+<l>paint_region (InnerHoles, Green3, Green4, 15, 'fill')</l>
+<l>paint_region (InnerHoles, Blue3, Blue4, 14, 'fill')</l>
+<c>* 两个大基准点，半径不同，不会通过目标孔半径筛选。</c>
+<l>gen_circle (Fiducials, [105,495], [115,885], [28,28])</l>
+<l>paint_region (Fiducials, Red4, Red5, 220, 'fill')</l>
+<l>paint_region (Fiducials, Green4, Green5, 220, 'fill')</l>
+<l>paint_region (Fiducials, Blue4, Blue5, 195, 'fill')</l>
+<l>gen_circle (FiducialCenters, [105,495], [115,885], [8,8])</l>
+<l>paint_region (FiducialCenters, Red5, Red6, 25, 'fill')</l>
+<l>paint_region (FiducialCenters, Green5, Green6, 28, 'fill')</l>
+<l>paint_region (FiducialCenters, Blue5, Blue6, 26, 'fill')</l>
+<l>compose3 (Red6, Green6, Blue6, ProductImage)</l>
+<l>return ()</l>
+</body>
+<docu id="generate_synthetic_pcb">
+<parameters>
+<parameter id="GroundTruthColumns"/>
+<parameter id="GroundTruthRows"/>
+<parameter id="ProductImage"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="locate_pcb_holes_local">
+<interface>
+<io>
+<par name="Image" base_type="iconic" dimension="0"/>
+</io>
+<oo>
+<par name="HoleRegions" base_type="iconic" dimension="0"/>
+</oo>
+<ic>
+<par name="ThresholdMin" base_type="ctrl" dimension="0"/>
+<par name="ThresholdMax" base_type="ctrl" dimension="0"/>
+<par name="MinRadiusPx" base_type="ctrl" dimension="0"/>
+<par name="MaxRadiusPx" base_type="ctrl" dimension="0"/>
+<par name="MinCircularity" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="Rows" base_type="ctrl" dimension="0"/>
+<par name="Columns" base_type="ctrl" dimension="0"/>
+<par name="RadiiPx" base_type="ctrl" dimension="0"/>
+<par name="Scores" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>threshold (Image, CandidateRegion, ThresholdMin, ThresholdMax)</l>
+<l>connection (CandidateRegion, ConnectedRegions)</l>
+<l>MinArea := 3.14159265358979 * MinRadiusPx * MinRadiusPx</l>
+<l>MaxArea := 3.14159265358979 * MaxRadiusPx * MaxRadiusPx</l>
+<l>select_shape (ConnectedRegions, SelectedHoles, ['area','circularity'], 'and', [MinArea,MinCircularity], [MaxArea,1.0])</l>
+<l>area_center (SelectedHoles, Areas, RowsUnsorted, ColumnsUnsorted)</l>
+<l>circularity (SelectedHoles, ScoresUnsorted)</l>
+<l>if (|ColumnsUnsorted| &gt; 0)</l>
+<l>    tuple_sort_index (ColumnsUnsorted, SortIndices)</l>
+<l>    select_obj (SelectedHoles, HoleRegions, SortIndices + 1)</l>
+<l>    Rows := RowsUnsorted[SortIndices]</l>
+<l>    Columns := ColumnsUnsorted[SortIndices]</l>
+<l>    Scores := ScoresUnsorted[SortIndices]</l>
+<l>    RadiiPx := sqrt(Areas[SortIndices] / 3.14159265358979)</l>
+<l>else</l>
+<l>    gen_empty_obj (HoleRegions)</l>
+<l>    Rows := []</l>
+<l>    Columns := []</l>
+<l>    RadiiPx := []</l>
+<l>    Scores := []</l>
+<l>endif</l>
+<l>return ()</l>
+</body>
+<docu id="locate_pcb_holes_local">
+<parameters>
+<parameter id="Columns"/>
+<parameter id="HoleRegions"/>
+<parameter id="Image"/>
+<parameter id="MaxRadiusPx"/>
+<parameter id="MinCircularity"/>
+<parameter id="MinRadiusPx"/>
+<parameter id="RadiiPx"/>
+<parameter id="Rows"/>
+<parameter id="Scores"/>
+<parameter id="ThresholdMax"/>
+<parameter id="ThresholdMin"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="calibrate_nine_point_local">
+<interface>
+<ic>
+<par name="ImageRows" base_type="ctrl" dimension="0"/>
+<par name="ImageColumns" base_type="ctrl" dimension="0"/>
+<par name="MachineX" base_type="ctrl" dimension="0"/>
+<par name="MachineY" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="HomMat2D" base_type="ctrl" dimension="0"/>
+<par name="RMSE" base_type="ctrl" dimension="0"/>
+<par name="MaxError" base_type="ctrl" dimension="0"/>
+<par name="PointErrors" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>NumPoints := |ImageRows|</l>
+<l>vector_to_hom_mat2d (ImageColumns, ImageRows, MachineX, MachineY, HomMat2D)</l>
+<l>affine_trans_point_2d (HomMat2D, ImageColumns, ImageRows, FittedX, FittedY)</l>
+<l>PointErrors := sqrt((FittedX - MachineX) * (FittedX - MachineX) + (FittedY - MachineY) * (FittedY - MachineY))</l>
+<l>RMSE := sqrt(sum(PointErrors * PointErrors) / NumPoints)</l>
+<l>MaxError := max(PointErrors)</l>
+<l>return ()</l>
+</body>
+<docu id="calibrate_nine_point_local">
+<parameters>
+<parameter id="HomMat2D"/>
+<parameter id="ImageColumns"/>
+<parameter id="ImageRows"/>
+<parameter id="MachineX"/>
+<parameter id="MachineY"/>
+<parameter id="MaxError"/>
+<parameter id="PointErrors"/>
+<parameter id="RMSE"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="transform_image_points_local">
+<interface>
+<ic>
+<par name="HomMat2D" base_type="ctrl" dimension="0"/>
+<par name="ImageRows" base_type="ctrl" dimension="0"/>
+<par name="ImageColumns" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="MachineX" base_type="ctrl" dimension="0"/>
+<par name="MachineY" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>affine_trans_point_2d (HomMat2D, ImageColumns, ImageRows, MachineX, MachineY)</l>
+<l>return ()</l>
+</body>
+<docu id="transform_image_points_local">
+<parameters>
+<parameter id="HomMat2D"/>
+<parameter id="ImageColumns"/>
+<parameter id="ImageRows"/>
+<parameter id="MachineX"/>
+<parameter id="MachineY"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="calculate_xytheta_correction_local">
+<interface>
+<ic>
+<par name="BoardX" base_type="ctrl" dimension="0"/>
+<par name="BoardY" base_type="ctrl" dimension="0"/>
+<par name="BoardThetaDeg" base_type="ctrl" dimension="0"/>
+<par name="ToolX" base_type="ctrl" dimension="0"/>
+<par name="ToolY" base_type="ctrl" dimension="0"/>
+<par name="ToolThetaDeg" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="CorrectionX" base_type="ctrl" dimension="0"/>
+<par name="CorrectionY" base_type="ctrl" dimension="0"/>
+<par name="CorrectionThetaDeg" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>CorrectionX := BoardX - ToolX</l>
+<l>CorrectionY := BoardY - ToolY</l>
+<l>CorrectionThetaDeg := BoardThetaDeg - ToolThetaDeg</l>
+<l>return ()</l>
+</body>
+<docu id="calculate_xytheta_correction_local">
+<parameters>
+<parameter id="BoardThetaDeg"/>
+<parameter id="BoardX"/>
+<parameter id="BoardY"/>
+<parameter id="CorrectionThetaDeg"/>
+<parameter id="CorrectionX"/>
+<parameter id="CorrectionY"/>
+<parameter id="ToolThetaDeg"/>
+<parameter id="ToolX"/>
+<parameter id="ToolY"/>
+</parameters>
+</docu>
+</procedure>
+<procedure name="Test">
+<interface>
+<ic>
+<par name="ImageRows" base_type="ctrl" dimension="0"/>
+<par name="ImageColumns" base_type="ctrl" dimension="0"/>
+<par name="MachineX" base_type="ctrl" dimension="0"/>
+<par name="MachineY" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="HomMat2D" base_type="ctrl" dimension="0"/>
+<par name="CalibrationRMSE" base_type="ctrl" dimension="0"/>
+<par name="CalibrationMaxError" base_type="ctrl" dimension="0"/>
+<par name="PointErrors" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>calibrate_nine_point_local (ImageRows, ImageColumns, MachineX, MachineY, HomMat2D, CalibrationRMSE, CalibrationMaxError, PointErrors)</l>
+<l>return ()</l>
+</body>
+<docu id="Test">
+<parameters>
+<parameter id="CalibrationMaxError"/>
+<parameter id="CalibrationRMSE"/>
+<parameter id="HomMat2D"/>
+<parameter id="ImageColumns"/>
+<parameter id="ImageRows"/>
+<parameter id="MachineX"/>
+<parameter id="MachineY"/>
+<parameter id="PointErrors"/>
+</parameters>
+</docu>
+</procedure>
+</hdevelop>

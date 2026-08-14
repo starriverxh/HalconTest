@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="calibrate_nine_point">
+<interface>
+<ic>
+<par name="ImageRows" base_type="ctrl" dimension="0"/>
+<par name="ImageColumns" base_type="ctrl" dimension="0"/>
+<par name="MachineX" base_type="ctrl" dimension="0"/>
+<par name="MachineY" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="HomMat2D" base_type="ctrl" dimension="0"/>
+<par name="RMSE" base_type="ctrl" dimension="0"/>
+<par name="MaxError" base_type="ctrl" dimension="0"/>
+<par name="PointErrors" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* 图像坐标 HALCON 使用 (row,column)，几何算子的 x/y 对应 (column,row)。</c>
+<c>* 使用二维仿射最小二乘拟合：图像 (column,row) -&gt; 机器 (X,Y)。</c>
+<l>NumPoints := |ImageRows|</l>
+<l>if (NumPoints &lt; 3)</l>
+<l>    throw ('Calibration requires at least three non-collinear points.')</l>
+<l>endif</l>
+<l>if (|ImageColumns| != NumPoints or |MachineX| != NumPoints or |MachineY| != NumPoints)</l>
+<l>    throw ('Calibration input tuples must have the same length.')</l>
+<l>endif</l>
+<l>vector_to_hom_mat2d (ImageColumns, ImageRows, MachineX, MachineY, HomMat2D)</l>
+<l>affine_trans_point_2d (HomMat2D, ImageColumns, ImageRows, FittedX, FittedY)</l>
+<l>PointErrors := sqrt((FittedX - MachineX) * (FittedX - MachineX) + (FittedY - MachineY) * (FittedY - MachineY))</l>
+<l>RMSE := sqrt(sum(PointErrors * PointErrors) / NumPoints)</l>
+<l>MaxError := max(PointErrors)</l>
+<l>return ()</l>
+</body>
+</procedure>
+</hdevelop>
+

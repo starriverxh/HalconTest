@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="transform_image_points">
+<interface>
+<ic>
+<par name="HomMat2D" base_type="ctrl" dimension="0"/>
+<par name="ImageRows" base_type="ctrl" dimension="0"/>
+<par name="ImageColumns" base_type="ctrl" dimension="0"/>
+</ic>
+<oc>
+<par name="MachineX" base_type="ctrl" dimension="0"/>
+<par name="MachineY" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>if (|ImageRows| != |ImageColumns|)</l>
+<l>    throw ('ImageRows and ImageColumns must have the same length.')</l>
+<l>endif</l>
+<l>affine_trans_point_2d (HomMat2D, ImageColumns, ImageRows, MachineX, MachineY)</l>
+<l>return ()</l>
+</body>
+</procedure>
+</hdevelop>
+

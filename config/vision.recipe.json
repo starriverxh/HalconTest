@@ -1,0 +1,34 @@
+{
+  "recipeName": "pcb-pin-row-demo",
+  "listen": {
+    "address": "127.0.0.1",
+    "port": 9100,
+    "requestTimeoutMs": 5000,
+    "maxFrameBytes": 65536
+  },
+  "vision": {
+    "mode": "simulation",
+    "procedureDirectory": "halcon/procedures",
+    "calibrationFile": "halcon/calibration/board_camera_to_machine.dat",
+    "boardCamera": {
+      "interface": "GigEVision2",
+      "device": "CHANGE_ME",
+      "exposureUs": 1500,
+      "gainDb": 0.0
+    },
+    "tolerances": {
+      "maxCorrectionMm": 2.0,
+      "maxRotationDeg": 2.0,
+      "maxCalibrationRmseMm": 0.010,
+      "maxCalibrationErrorMm": 0.020,
+      "minimumMatchScore": 0.75
+    },
+    "simulationResult": {
+      "xMm": 0.018,
+      "yMm": -0.012,
+      "thetaDeg": 0.006,
+      "score": 0.982
+    }
+  }
+}
+

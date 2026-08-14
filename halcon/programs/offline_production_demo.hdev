@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* ================================================================</c>
+<c>* 注意：本文件使用外部.hdvp过程。直接在HDevelop运行前，需要将</c>
+<c>* C:/Users/hcg/Documents/HalconTest/halcon/procedures 加入外部过程路径。</c>
+<c>* 初学请直接打开 01_single_file_learning_demo.hdev，它无需任何路径配置。</c>
+<c>* 无相机离线教学：多点标定 -&gt; 验证点 -&gt; PCB孔检测 -&gt; XYT补偿</c>
+<c>* 使用 scripts/run-halcon-offline.ps1 自动运行和检查 DemoPassed。</c>
+<c>* ================================================================</c>
+<l>DemoPassed := 0</l>
+<c>* 1) 合成九个拟合点。机器坐标由一个已知仿射模型生成。</c>
+<l>ImageRows := [200,200,200,1024,1024,1024,1848,1848,1848]</l>
+<l>ImageColumns := [300,1224,2148,300,1224,2148,300,1224,2148]</l>
+<l>MachineX := 0.016 * ImageColumns + 0.0004 * ImageRows + 5.0</l>
+<l>MachineY := -0.0003 * ImageColumns + 0.018 * ImageRows + 10.0</l>
+<l>calibrate_nine_point (ImageRows, ImageColumns, MachineX, MachineY, HomMat2D, RMSE, MaxError, PointErrors)</l>
+<c>* 2) 用未参与拟合的独立点验证，不要只看拟合点 RMSE。</c>
+<l>ValidationRows := [612,1436]</l>
+<l>ValidationColumns := [762,1686]</l>
+<l>ExpectedX := 0.016 * ValidationColumns + 0.0004 * ValidationRows + 5.0</l>
+<l>ExpectedY := -0.0003 * ValidationColumns + 0.018 * ValidationRows + 10.0</l>
+<l>transform_image_points (HomMat2D, ValidationRows, ValidationColumns, ValidationX, ValidationY)</l>
+<l>ValidationErrors := sqrt((ValidationX - ExpectedX) * (ValidationX - ExpectedX) + (ValidationY - ExpectedY) * (ValidationY - ExpectedY))</l>
+<l>ValidationMaxError := max(ValidationErrors)</l>
+<c>* 3) 生成一排五个亮孔的合成图，用区域法定位。</c>
+<l>gen_image_const (Image, 'byte', 800, 500)</l>
+<l>gen_circle (SyntheticHoles, [250,250,250,250,250], [120,260,400,540,680], [18,18,18,18,18])</l>
+<l>paint_region (SyntheticHoles, Image, HoleImage, 230, 'fill')</l>
+<l>locate_pcb_holes (HoleImage, HoleRegions, 180, 255, 15, 22, 0.85, HoleRows, HoleColumns, HoleRadii, HoleScores)</l>
+<l>HoleCount := |HoleRows|</l>
+<c>* 4) 演示板端目标与针尖TCP之间的补偿。</c>
+<l>calculate_xytheta_correction (100.020, 50.010, 0.025, 100.002, 50.022, 0.019, CorrectionX, CorrectionY, CorrectionTheta)</l>
+<l>if (RMSE &lt; 0.000001 and ValidationMaxError &lt; 0.000001 and HoleCount == 5 and fabs(CorrectionX - 0.018) &lt; 0.000001 and fabs(CorrectionY + 0.012) &lt; 0.000001)</l>
+<l>    DemoPassed := 1</l>
+<l>endif</l>
+<l>Summary := ['DemoPassed',DemoPassed,'RMSE_mm',RMSE,'ValidationMaxError_mm',ValidationMaxError,'HoleCount',HoleCount,'CorrectionX_mm',CorrectionX,'CorrectionY_mm',CorrectionY,'CorrectionTheta_deg',CorrectionTheta]</l>
+</body>
+</procedure>
+</hdevelop>

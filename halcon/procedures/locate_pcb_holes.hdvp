@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="locate_pcb_holes">
+<interface>
+<io>
+<par name="Image" base_type="iconic" dimension="0"/>
+</io>
+<ic>
+<par name="ThresholdMin" base_type="ctrl" dimension="0"/>
+<par name="ThresholdMax" base_type="ctrl" dimension="0"/>
+<par name="MinRadiusPx" base_type="ctrl" dimension="0"/>
+<par name="MaxRadiusPx" base_type="ctrl" dimension="0"/>
+<par name="MinCircularity" base_type="ctrl" dimension="0"/>
+</ic>
+<oo>
+<par name="HoleRegions" base_type="iconic" dimension="0"/>
+</oo>
+<oc>
+<par name="Rows" base_type="ctrl" dimension="0"/>
+<par name="Columns" base_type="ctrl" dimension="0"/>
+<par name="RadiiPx" base_type="ctrl" dimension="0"/>
+<par name="Scores" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* 区域法教学版本：阈值 -&gt; 连通域 -&gt; 面积/圆度筛选 -&gt; 中心。</c>
+<l>threshold (Image, CandidateRegion, ThresholdMin, ThresholdMax)</l>
+<l>connection (CandidateRegion, ConnectedRegions)</l>
+<l>MinArea := 3.14159265358979 * MinRadiusPx * MinRadiusPx</l>
+<l>MaxArea := 3.14159265358979 * MaxRadiusPx * MaxRadiusPx</l>
+<l>select_shape (ConnectedRegions, HoleRegions, ['area','circularity'], 'and', [MinArea,MinCircularity], [MaxArea,1.0])</l>
+<l>area_center (HoleRegions, Areas, RowsUnsorted, ColumnsUnsorted)</l>
+<l>circularity (HoleRegions, ScoresUnsorted)</l>
+<l>if (|ColumnsUnsorted| &gt; 0)</l>
+<l>    tuple_sort_index (ColumnsUnsorted, SortIndices)</l>
+<l>    Rows := RowsUnsorted[SortIndices]</l>
+<l>    Columns := ColumnsUnsorted[SortIndices]</l>
+<l>    Scores := ScoresUnsorted[SortIndices]</l>
+<l>    RadiiPx := sqrt(Areas[SortIndices] / 3.14159265358979)</l>
+<l>else</l>
+<l>    Rows := []</l>
+<l>    Columns := []</l>
+<l>    RadiiPx := []</l>
+<l>    Scores := []</l>
+<l>endif</l>
+<l>return ()</l>
+</body>
+</procedure>
+</hdevelop>

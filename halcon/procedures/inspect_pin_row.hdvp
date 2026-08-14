@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="inspect_pin_row">
+<interface>
+<oc>
+<par name="is_ok" base_type="ctrl" dimension="0"/>
+<par name="x" base_type="ctrl" dimension="0"/>
+<par name="y" base_type="ctrl" dimension="0"/>
+<par name="theta" base_type="ctrl" dimension="0"/>
+<par name="score" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<c>* HDevEngine 接口冒烟测试。真实生产时应由相机采集过程调用 locate_pcb_holes，</c>
+<c>* 再结合上视针尖结果和标定矩阵计算补偿。</c>
+<l>is_ok := 1</l>
+<l>x := 0.018</l>
+<l>y := -0.012</l>
+<l>theta := 0.006</l>
+<l>score := 0.982</l>
+<l>return ()</l>
+</body>
+</procedure>
+</hdevelop>
+

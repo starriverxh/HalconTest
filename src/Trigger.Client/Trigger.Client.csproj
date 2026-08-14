@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Trigger.Client</RootNamespace>
+    <AssemblyName>Trigger.Client</AssemblyName>
+  </PropertyGroup>
+</Project>

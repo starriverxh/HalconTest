@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+.dotnet-home/
+.tmp/
+TestResults/
+artifacts/
+runtime/logs/
+runtime/results/
+runtime/images/
+halcon/calibration/*.dat
+halcon/models/*.shm
+halcon/models/*.ncm
+*.user
+*.suo

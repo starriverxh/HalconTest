@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HALCON pin insertion vision recipe",
+  "type": "object",
+  "required": ["recipeName", "listen", "vision"],
+  "properties": {
+    "recipeName": { "type": "string", "minLength": 1 },
+    "listen": {
+      "type": "object",
+      "required": ["address", "port", "requestTimeoutMs", "maxFrameBytes"],
+      "properties": {
+        "address": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "requestTimeoutMs": { "type": "integer", "minimum": 100 },
+        "maxFrameBytes": { "type": "integer", "minimum": 1024 }
+      }
+    },
+    "vision": {
+      "type": "object",
+      "required": ["mode", "procedureDirectory", "calibrationFile", "tolerances"],
+      "properties": {
+        "mode": { "enum": ["simulation", "halcon"] },
+        "procedureDirectory": { "type": "string" },
+        "calibrationFile": { "type": "string" },
+        "tolerances": {
+          "type": "object",
+          "required": ["maxCorrectionMm", "maxRotationDeg", "maxCalibrationRmseMm", "maxCalibrationErrorMm", "minimumMatchScore"]
+        }
+      }
+    }
+  }
+}
+
