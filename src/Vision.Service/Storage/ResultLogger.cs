@@ -1,14 +1,15 @@
 using System.Text.Json;
+using Vision.Service.Communication;
 
-namespace Vision.Service;
+namespace Vision.Service.Storage;
 
-public sealed class JsonLineStore
+public sealed class ResultLogger
 {
     private readonly string _logsDirectory;
     private readonly string _resultsDirectory;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-    public JsonLineStore(string runtimeDirectory)
+    public ResultLogger(string runtimeDirectory)
     {
         _logsDirectory = Path.Combine(runtimeDirectory, "logs");
         _resultsDirectory = Path.Combine(runtimeDirectory, "results");
@@ -42,11 +43,7 @@ public sealed class JsonLineStore
     {
         var safeId = string.Concat(requestId.Select(character =>
             char.IsLetterOrDigit(character) || character is '-' or '_' ? character : '_'));
-        if (safeId.Length > 80)
-        {
-            safeId = safeId[..80];
-        }
-
+        safeId = safeId[..Math.Min(safeId.Length, 80)];
         var path = Path.Combine(_resultsDirectory, $"{DateTime.UtcNow:yyyyMMdd_HHmmssfff}_{safeId}.json");
         await using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 4096, useAsync: true);
         await JsonSerializer.SerializeAsync(stream, result, Protocol.JsonOptions, cancellationToken).ConfigureAwait(false);

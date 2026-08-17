@@ -1,3 +1,9 @@
+using Vision.Service.Acquisition;
+using Vision.Service.Communication;
+using Vision.Service.Configuration;
+using Vision.Service.Storage;
+using Vision.Service.Vision;
+
 namespace Vision.Service;
 
 public static class Program
@@ -7,7 +13,7 @@ public static class Program
         try
         {
             var options = ServiceOptions.Parse(args);
-            await using var backend = CreateBackend(options);
+            await using var backend = await CreateBackendAsync(options).ConfigureAwait(false);
             await using var server = new VisionTcpServer(options, backend);
             using var shutdownSource = new CancellationTokenSource();
             Console.CancelKeyPress += (_, eventArgs) =>
@@ -32,13 +38,34 @@ public static class Program
         }
     }
 
-    private static IVisionBackend CreateBackend(ServiceOptions options) => options.Backend.ToLowerInvariant() switch
+    private static async Task<IVisionBackend> CreateBackendAsync(ServiceOptions options) => options.Backend.ToLowerInvariant() switch
     {
         "mock" => new MockVisionBackend(TimeSpan.FromMilliseconds(options.MockDelayMs)),
-        "hdevengine" when options.HalconAssemblyPath is not null && options.ProcedurePath is not null =>
-            new HDevEngineBackend(options.HalconAssemblyPath, options.ProcedurePath, options.ProcedureName),
-        "hdevengine" => throw new ArgumentException(
-            "--backend hdevengine requires --halcon-assembly and --procedure-path."),
+        "halcon" or "halcondotnet" => await CreateHalconBackendAsync(options).ConfigureAwait(false),
         _ => throw new ArgumentException($"Unsupported backend '{options.Backend}'.")
     };
+
+    private static async Task<IVisionBackend> CreateHalconBackendAsync(ServiceOptions options)
+    {
+        var recipe = await VisionRecipe.LoadAsync(options.RecipePath).ConfigureAwait(false);
+        var calibration = await new CalibrationService()
+            .LoadOrCreateAsync(recipe.Calibration)
+            .ConfigureAwait(false);
+        var camera = new HalconCamera(recipe.Camera);
+        await camera.OpenAsync().ConfigureAwait(false);
+        var inspectionService = new PinInspectionService(
+            camera,
+            new PcbHoleLocator(),
+            new PinTipLocator(),
+            new CoordinateTransformer(calibration),
+            new XYThetaCalculator(),
+            new ImageStore(options.RuntimeDirectory),
+            recipe,
+            calibration);
+
+        Console.WriteLine(
+            $"Recipe '{recipe.RecipeName}', calibration RMSE={calibration.RmseMm:F6} mm, " +
+            $"validation max={calibration.MaxValidationErrorMm:F6} mm.");
+        return new HalconVisionBackend(inspectionService, camera);
+    }
 }

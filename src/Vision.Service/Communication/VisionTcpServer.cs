@@ -3,14 +3,17 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using Vision.Service.Configuration;
+using Vision.Service.Storage;
+using Vision.Service.Vision;
 
-namespace Vision.Service;
+namespace Vision.Service.Communication;
 
 public sealed class VisionTcpServer : IAsyncDisposable
 {
     private readonly ServiceOptions _options;
     private readonly IVisionBackend _backend;
-    private readonly JsonLineStore _store;
+    private readonly ResultLogger _store;
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _stopSource = new();
     private readonly SemaphoreSlim _triggerGate = new(1, 1);
@@ -30,7 +33,7 @@ public sealed class VisionTcpServer : IAsyncDisposable
 
         _options = options;
         _backend = backend;
-        _store = new JsonLineStore(options.RuntimeDirectory);
+        _store = new ResultLogger(options.RuntimeDirectory);
         _listener = new TcpListener(options.ListenAddress, options.Port);
     }
 
@@ -257,7 +260,7 @@ public sealed class VisionTcpServer : IAsyncDisposable
             using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(serverToken, timeoutSource.Token);
             try
             {
-                var measurement = await _backend.TriggerAsync(request.Parameters, linkedSource.Token).ConfigureAwait(false);
+                var measurement = await _backend.TriggerAsync(requestId, request.Parameters, linkedSource.Token).ConfigureAwait(false);
                 var completedUtc = DateTimeOffset.UtcNow;
                 var persisted = new
                 {

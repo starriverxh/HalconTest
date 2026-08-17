@@ -7,5 +7,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Vision.Service/Vision.Service.csproj" />
+    <Reference Include="halcondotnet">
+      <HintPath>$(HALCONROOT)\bin\dotnet35\halcondotnet.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 </Project>

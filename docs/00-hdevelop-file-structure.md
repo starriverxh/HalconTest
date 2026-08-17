@@ -1,5 +1,7 @@
 # HDevelop文件结构：怎样类比C#
 
+> 当前`dev`分支的正式生产代码已经改为C#直接调用`HalconDotNet/HOperatorSet`。本章中的HDevEngine和`.hdvp`内容保留用于理解HALCON模块化与历史方案；正式入口请看`docs/07-csharp-halcon-production-development.md`。
+
 你的理解基本正确，但要稍微修正：
 
 | HALCON/HDevelop | 类似的C#概念 |
@@ -79,4 +81,3 @@ grab_image_async (ProductImage, AcqHandle, -1)
 ~~~
 
 后面的灰度转换、孔定位、坐标转换和补偿逻辑保持不变。不过真实图片的阈值、ROI、孔径像素范围和光源参数必须重新调试。
-

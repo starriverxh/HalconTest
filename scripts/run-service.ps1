@@ -1,8 +1,8 @@
 param(
     [string]$Configuration = "Debug",
     [int]$Port = 9100,
-    [ValidateSet("mock", "hdevengine")]
-    [string]$Backend = "mock"
+    [ValidateSet("mock", "halcon")]
+    [string]$Backend = "halcon"
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,18 +18,8 @@ $arguments = @(
     "--host", "127.0.0.1",
     "--port", $Port,
     "--runtime-dir", (Join-Path $projectRoot "runtime"),
-    "--backend", $Backend
+    "--backend", $Backend,
+    "--recipe", (Join-Path $projectRoot "config/vision.recipe.json")
 )
-
-if ($Backend -eq "hdevengine") {
-    if (-not $env:HALCONROOT) {
-        throw "HALCONROOT is not set. Start the MVTec HALCON command environment first."
-    }
-    $arguments += @(
-        "--halcon-assembly", (Join-Path $env:HALCONROOT "bin/dotnet35/hdevenginedotnet.dll"),
-        "--procedure-path", (Join-Path $projectRoot "halcon/procedures"),
-        "--procedure-name", "inspect_pin_row"
-    )
-}
 
 dotnet @arguments

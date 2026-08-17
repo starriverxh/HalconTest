@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -10,6 +10,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vision.Service.Tests", "tes
 	ProjectSection(ProjectDependencies) = postProject
 		{B6B1E85E-A330-4A52-B609-1567B3F791A1} = {B6B1E85E-A330-4A52-B609-1567B3F791A1}
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{41B6C532-5ABE-4C47-B708-5E6B82593507}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vision.Desktop", "src\Vision.Desktop\Vision.Desktop.csproj", "{55AC2CA1-48C9-4163-AF63-2BEA118C057E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,5 +33,12 @@ Global
 		{7DCB45DA-1379-4C08-B49E-4232E65BF34F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7DCB45DA-1379-4C08-B49E-4232E65BF34F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7DCB45DA-1379-4C08-B49E-4232E65BF34F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55AC2CA1-48C9-4163-AF63-2BEA118C057E}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{55AC2CA1-48C9-4163-AF63-2BEA118C057E}.Debug|Any CPU.Build.0 = Debug|x64
+		{55AC2CA1-48C9-4163-AF63-2BEA118C057E}.Release|Any CPU.ActiveCfg = Release|x64
+		{55AC2CA1-48C9-4163-AF63-2BEA118C057E}.Release|Any CPU.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{55AC2CA1-48C9-4163-AF63-2BEA118C057E} = {41B6C532-5ABE-4C47-B708-5E6B82593507}
 	EndGlobalSection
 EndGlobal

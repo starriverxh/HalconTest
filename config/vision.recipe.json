@@ -1,34 +1,36 @@
 {
   "recipeName": "pcb-pin-row-demo",
-  "listen": {
-    "address": "127.0.0.1",
-    "port": 9100,
-    "requestTimeoutMs": 5000,
-    "maxFrameBytes": 65536
+  "camera": {
+    "mode": "File",
+    "imagePath": "../data/offline/synthetic_pcb_good.png",
+    "interfaceName": "GigEVision2",
+    "device": "CHANGE_ME_AFTER_CAMERA_SELECTION",
+    "exposureMicroseconds": 1500,
+    "gainDb": 0.0,
+    "acquisitionTimeoutMs": 3000
   },
-  "vision": {
-    "mode": "simulation",
-    "procedureDirectory": "halcon/procedures",
-    "calibrationFile": "halcon/calibration/board_camera_to_machine.dat",
-    "boardCamera": {
-      "interface": "GigEVision2",
-      "device": "CHANGE_ME",
-      "exposureUs": 1500,
-      "gainDb": 0.0
-    },
-    "tolerances": {
-      "maxCorrectionMm": 2.0,
-      "maxRotationDeg": 2.0,
-      "maxCalibrationRmseMm": 0.010,
-      "maxCalibrationErrorMm": 0.020,
-      "minimumMatchScore": 0.75
-    },
-    "simulationResult": {
-      "xMm": 0.018,
-      "yMm": -0.012,
-      "thetaDeg": 0.006,
-      "score": 0.982
-    }
+  "holeDetection": {
+    "thresholdMin": 0,
+    "thresholdMax": 65,
+    "minRadiusPx": 15,
+    "maxRadiusPx": 22,
+    "minCircularity": 0.85,
+    "expectedCount": 5
+  },
+  "calibration": {
+    "pointsFile": "nine-point.sample.csv",
+    "modelFile": "../runtime/calibration/camera-to-machine.json"
+  },
+  "toolReferencePose": {
+    "xmm": 15.12175,
+    "ymm": 15.80220,
+    "thetaDeg": -1.1517628381751086
+  },
+  "tolerances": {
+    "maxCorrectionMm": 0.05,
+    "maxRotationDeg": 0.05,
+    "maxCalibrationRmseMm": 0.01,
+    "maxCalibrationErrorMm": 0.02,
+    "minimumFeatureScore": 0.85
   }
 }
-

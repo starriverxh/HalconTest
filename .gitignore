@@ -8,6 +8,7 @@ artifacts/
 runtime/logs/
 runtime/results/
 runtime/images/
+runtime/calibration/
 halcon/calibration/*.dat
 halcon/models/*.shm
 halcon/models/*.ncm

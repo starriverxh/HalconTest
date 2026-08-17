@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Vision.Service;
+namespace Vision.Service.Communication;
 
 public static class Protocol
 {

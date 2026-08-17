@@ -2,7 +2,11 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
-using Vision.Service;
+using Vision.Service.Acquisition;
+using Vision.Service.Communication;
+using Vision.Service.Configuration;
+using Vision.Service.Storage;
+using Vision.Service.Vision;
 
 namespace Vision.Service.Tests;
 
@@ -107,6 +111,40 @@ public static class Program
                 await serverTask.WaitAsync(TimeSpan.FromSeconds(2));
             });
 
+            await TestAsync("C# HalconDotNet offline pipeline", async () =>
+            {
+                var recipePath = Path.Combine(Environment.CurrentDirectory, "config", "vision.recipe.json");
+                var recipe = await VisionRecipe.LoadAsync(recipePath);
+                recipe = recipe with
+                {
+                    Calibration = recipe.Calibration with
+                    {
+                        ModelFile = Path.Combine(runtimeDirectory, "calibration", "camera-to-machine.json")
+                    }
+                };
+                var calibration = await new CalibrationService().LoadOrCreateAsync(recipe.Calibration);
+                await using var camera = new HalconCamera(recipe.Camera);
+                await camera.OpenAsync();
+                var inspection = new PinInspectionService(
+                    camera,
+                    new PcbHoleLocator(),
+                    new PinTipLocator(),
+                    new CoordinateTransformer(calibration),
+                    new XYThetaCalculator(),
+                    new ImageStore(runtimeDirectory),
+                    recipe,
+                    calibration);
+                var result = await inspection.InspectAsync("halcon-offline-1", null);
+                Console.WriteLine(
+                    $"HALCON result: OK={result.IsOk}, X={result.X:F6}, Y={result.Y:F6}, " +
+                    $"T={result.Theta:F6}, Score={result.Score:F3}");
+                Equal(true, result.IsOk);
+                Near(0.018, result.X, 0.001);
+                Near(-0.012, result.Y, 0.001);
+                Near(0.006, result.Theta, 0.001);
+                Check(result.ImagePath is not null && File.Exists(result.ImagePath), "HALCON source image was not persisted.");
+            });
+
             Console.WriteLine($"All {_passed} self-tests passed.");
             return 0;
         }
@@ -175,6 +213,15 @@ public static class Program
         if (!condition)
         {
             throw new InvalidOperationException(message);
+        }
+    }
+
+    private static void Near(double expected, double actual, double tolerance)
+    {
+        if (Math.Abs(expected - actual) > tolerance)
+        {
+            throw new InvalidOperationException(
+                $"Expected '{expected}' ± {tolerance}, got '{actual}'.");
         }
     }
 }

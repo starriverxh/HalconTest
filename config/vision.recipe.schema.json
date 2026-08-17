@@ -1,33 +1,38 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "HALCON pin insertion vision recipe",
+  "title": "HALCON C# pin insertion vision recipe",
   "type": "object",
-  "required": ["recipeName", "listen", "vision"],
+  "required": ["recipeName", "camera", "holeDetection", "calibration", "toolReferencePose", "tolerances"],
   "properties": {
     "recipeName": { "type": "string", "minLength": 1 },
-    "listen": {
+    "camera": {
       "type": "object",
-      "required": ["address", "port", "requestTimeoutMs", "maxFrameBytes"],
+      "required": ["mode", "imagePath"],
       "properties": {
-        "address": { "type": "string" },
-        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-        "requestTimeoutMs": { "type": "integer", "minimum": 100 },
-        "maxFrameBytes": { "type": "integer", "minimum": 1024 }
+        "mode": { "enum": ["File"] },
+        "imagePath": { "type": "string", "minLength": 1 },
+        "interfaceName": { "type": "string" },
+        "device": { "type": "string" },
+        "exposureMicroseconds": { "type": "number", "exclusiveMinimum": 0 },
+        "gainDb": { "type": "number" },
+        "acquisitionTimeoutMs": { "type": "integer", "minimum": 1 }
       }
     },
-    "vision": {
+    "holeDetection": {
       "type": "object",
-      "required": ["mode", "procedureDirectory", "calibrationFile", "tolerances"],
-      "properties": {
-        "mode": { "enum": ["simulation", "halcon"] },
-        "procedureDirectory": { "type": "string" },
-        "calibrationFile": { "type": "string" },
-        "tolerances": {
-          "type": "object",
-          "required": ["maxCorrectionMm", "maxRotationDeg", "maxCalibrationRmseMm", "maxCalibrationErrorMm", "minimumMatchScore"]
-        }
-      }
+      "required": ["thresholdMin", "thresholdMax", "minRadiusPx", "maxRadiusPx", "minCircularity", "expectedCount"]
+    },
+    "calibration": {
+      "type": "object",
+      "required": ["pointsFile", "modelFile"]
+    },
+    "toolReferencePose": {
+      "type": "object",
+      "required": ["xmm", "ymm", "thetaDeg"]
+    },
+    "tolerances": {
+      "type": "object",
+      "required": ["maxCorrectionMm", "maxRotationDeg", "maxCalibrationRmseMm", "maxCalibrationErrorMm", "minimumFeatureScore"]
     }
   }
 }
-

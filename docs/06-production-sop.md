@@ -148,7 +148,7 @@ ROI
 
 1. 用 mock 后端验证协议；
 2. 模拟 BUSY、超时、非法JSON、断网和重连；
-3. 用 hdevengine 后端验证HALCON过程加载；
+3. 用`halcon`后端验证`halcondotnet.dll`、HALCON Runtime和C#视觉流水线；
 4. 接文件图像，验证算法和追溯；
 5. 最后接真实相机和硬触发；
 6. 每个请求使用唯一 requestId；
@@ -239,4 +239,3 @@ ROI
 8. 完成内参、下视XY、上视TCP、T轴和Z标定；
 9. 把真实过程接入 `inspect_pin_row.hdvp`；
 10. 按 G 节完成端到端验收。
-

@@ -10,7 +10,7 @@
 4. 形状模板：`create_shape_model`、`find_shape_model`，理解分数、角度范围、金字塔层级；
 5. 二维变换：`vector_to_hom_mat2d`、`affine_trans_point_2d`、`hom_mat2d_*`；
 6. 相机标定：标定板、相机参数、畸变、世界平面与 `image_points_to_world_plane`；
-7. HDevEngine：把 HDevelop 外部过程作为生产接口，由服务传入参数并取回结果；
+7. HalconDotNet：正式C#服务直接调用`HOperatorSet`，`.hdev/.hdvp`保留为算法原型参考；
 8. 图像采集、硬触发、异常恢复和结果留档。
 
 本工程的 `.hdvp` 文件是外部过程，可直接在 HDevelop 中打开；`offline_production_demo.hdev` 用合成数据演示完整闭环，不需要相机。
@@ -141,5 +141,4 @@ RMSE = sqrt(mean(error_i^2))
 
 ## 8. 本机 HALCON 环境说明
 
-本机已安装 HALCON `23.11 Progress x64`。工程通过 HDevEngine 调用外部过程，生产机需要正确的 HALCON Runtime/Development 授权。当前安装只检测到文件采集接口；接 GigE/USB3 真相机前，应从 MVTec 安装与相机协议匹配的 Acquisition Interface，并用 `info_framegrabber` 验证接口和参数。
-
+本机已安装 HALCON `23.11 Progress x64`。工程通过`halcondotnet.dll`直接调用HALCON算子，生产机需要正确的HALCON Runtime授权。接GigE/USB3真相机前，应从MVTec安装与相机协议匹配的Acquisition Interface，并用`info_framegrabber`验证接口和参数。

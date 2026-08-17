@@ -48,7 +48,7 @@ PLC / 运动控制器
             └─ Vision.Service
                  ├─ 请求校验、单工位状态机、超时、错误码
                  ├─ 配方、日志、原图与结果留档
-                 └─ HDevEngine
+                 └─ HalconDotNet / HOperatorSet
                       ├─ 相机采集
                       ├─ PCB / 针尖定位
                       ├─ 标定与坐标变换
@@ -129,4 +129,3 @@ T_correction = T_machine_board_target * inverse(T_machine_tool_tip)
 - `src/Trigger.Client/`：上位机最小触发示例，不依赖 HALCON。
 - `config/`：配方、协议和标定点示例。
 - `docs/`：光学选型、HALCON 学习路线、调试和验收。
-

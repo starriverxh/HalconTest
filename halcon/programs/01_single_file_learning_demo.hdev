@@ -11,7 +11,7 @@
 <l>dev_close_window ()</l>
 <c>* Step 1：HALCON生成一张接近PCB产品的彩色模拟图。</c>
 <l>generate_synthetic_pcb (ProductImage, GroundTruthRows, GroundTruthColumns)</l>
-<l>write_image (ProductImage, 'png', 0, 'C:/Users/hcg/Documents/HalconTest/data/offline/synthetic_pcb_good.png')</l>
+<c>* 仓库已包含data/offline/synthetic_pcb_good.png；这里不重复写盘，避免每次调试改动Git文件。</c>
 <c>* Step 2：彩色图转灰度。以后接相机时，从这里开始仍可继续使用。</c>
 <l>rgb1_to_gray (ProductImage, GrayImage)</l>
 <c>* Step 3：定位一排PCB孔。输出按列坐标从左到右排序。</c>
@@ -22,7 +22,7 @@
 <l>ImageColumns := [100,450,800,100,450,800,100,450,800]</l>
 <l>MachineX := 0.020 * ImageColumns + 0.0005 * ImageRows + 5.0</l>
 <l>MachineY := -0.0004 * ImageColumns + 0.020 * ImageRows + 10.0</l>
-<c></c>
+<l>calibrate_nine_point_local (ImageRows, ImageColumns, MachineX, MachineY, HomMat2D, CalibrationRMSE, CalibrationMaxError, PointErrors)</l>
 <c>* Step 5：将检测到的孔中心转换为机器坐标。</c>
 <l>transform_image_points_local (HomMat2D, HoleRows, HoleColumns, HoleMachineX, HoleMachineY)</l>
 <c>* Step 6：示例板端目标与上视相机测得的针排TCP，计算XYT补偿。</c>
@@ -44,7 +44,7 @@
 <l>gen_cross_contour_xld (HoleCenters, HoleRows, HoleColumns, 24, 0.785398)</l>
 <l>dev_set_color ('yellow')</l>
 <l>dev_display (HoleCenters)</l>
-<l>ResultText := ['HALCON PCB pin insertion learning demo','Detected holes: ' + HoleCount,'Calibration RMSE: ' + CalibrationRMSE$'.6f' + ' mm','Calibration max error: ' + CalibrationMaxError$'.6f' + ' mm','Correction X: ' + CorrectionX$'.3f' + ' mm','Correction Y: ' + CorrectionY$'.3f' + ' mm','Correction theta: ' + CorrectionThetaDeg$'.3f' + ' deg','Synthetic image saved to data/offline/synthetic_pcb_good.png']</l>
+<l>ResultText := ['HALCON PCB pin insertion learning demo','Detected holes: ' + HoleCount,'Calibration RMSE: ' + CalibrationRMSE$'.6f' + ' mm','Calibration max error: ' + CalibrationMaxError$'.6f' + ' mm','Correction X: ' + CorrectionX$'.3f' + ' mm','Correction Y: ' + CorrectionY$'.3f' + ' mm','Correction theta: ' + CorrectionThetaDeg$'.3f' + ' deg','Offline sample: data/offline/synthetic_pcb_good.png']</l>
 <l>dev_disp_text (ResultText, 'window', 15, 15, 'white', 'box', 'true')</l>
 <l>DemoPassed := HoleCount == 5 and CalibrationMaxError &lt; 0.000001 and fabs(CorrectionX - 0.018) &lt; 0.000001 and fabs(CorrectionY + 0.012) &lt; 0.000001</l>
 </body>
