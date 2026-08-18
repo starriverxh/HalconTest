@@ -7,6 +7,7 @@ using Vision.Service.Communication;
 using Vision.Service.Configuration;
 using Vision.Service.Storage;
 using Vision.Service.Vision;
+using Vision.Service.Workbench;
 
 namespace Vision.Service.Tests;
 
@@ -26,7 +27,11 @@ public static class Program
             RuntimeDirectory = runtimeDirectory
         };
 
-        await using var server = new VisionTcpServer(options, new MockVisionBackend(TimeSpan.FromMilliseconds(150)));
+        var workbench = new VisionWorkbenchService(runtimeDirectory);
+        await using var server = new VisionTcpServer(
+            options,
+            new MockVisionBackend(TimeSpan.FromMilliseconds(150)),
+            workbench);
         var serverTask = server.RunAsync();
         var readyDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
         while (server.BoundPort == 0 && DateTime.UtcNow < readyDeadline)
@@ -102,6 +107,107 @@ public static class Program
                 using var second = JsonDocument.Parse(await ReadLineAsync(stream));
                 Equal("multi-1", first.RootElement.GetProperty("requestId").GetString());
                 Equal("multi-2", second.RootElement.GetProperty("requestId").GetString());
+            });
+
+            var offlineImage = Path.Combine(Environment.CurrentDirectory, "data", "offline", "synthetic_pcb_good.png");
+            await TestAsync("HALCON ROI and Blob processing workbench", async () =>
+            {
+                using var response = await SendAsync(port, new
+                {
+                    requestId = "processing-1",
+                    command = "preview_processing",
+                    timeoutMs = 10_000,
+                    parameters = new
+                    {
+                        imagePath = offlineImage,
+                        roi = new { row1 = 230, column1 = 120, row2 = 370, column2 = 880 },
+                        thresholdMin = 0,
+                        thresholdMax = 65,
+                        minRadiusPx = 15,
+                        maxRadiusPx = 22,
+                        minCircularity = 0.85
+                    }
+                });
+                Equal(true, response.RootElement.GetProperty("ok").GetBoolean());
+                var data = response.RootElement.GetProperty("data");
+                Equal(5, data.GetProperty("selectedCount").GetInt32());
+                var previewPath = data.GetProperty("binaryPreviewPath").GetString();
+                Check(previewPath is not null && File.Exists(previewPath), "Binary processing preview was not saved.");
+            });
+
+            string? shapeModelPath = null;
+            await TestAsync("HALCON shape model creation", async () =>
+            {
+                using var response = await SendAsync(port, new
+                {
+                    requestId = "template-create-1",
+                    command = "create_template",
+                    timeoutMs = 15_000,
+                    parameters = new
+                    {
+                        imagePath = offlineImage,
+                        roi = new { row1 = 245, column1 = 135, row2 = 355, column2 = 865 },
+                        modelName = "self-test-five-hole-row",
+                        angleStartDeg = -5,
+                        angleExtentDeg = 10,
+                        contrast = 20
+                    }
+                });
+                Equal(true, response.RootElement.GetProperty("ok").GetBoolean());
+                shapeModelPath = response.RootElement.GetProperty("data").GetProperty("modelPath").GetString();
+                Check(shapeModelPath is not null && File.Exists(shapeModelPath), "Shape model was not saved.");
+            });
+
+            await TestAsync("HALCON shape model matching", async () =>
+            {
+                using var response = await SendAsync(port, new
+                {
+                    requestId = "template-match-1",
+                    command = "match_template",
+                    timeoutMs = 15_000,
+                    parameters = new
+                    {
+                        imagePath = offlineImage,
+                        modelPath = shapeModelPath,
+                        angleStartDeg = -5,
+                        angleExtentDeg = 10,
+                        minScore = 0.5,
+                        numMatches = 1,
+                        maxOverlap = 0.5
+                    }
+                });
+                Equal(true, response.RootElement.GetProperty("ok").GetBoolean());
+                var matches = response.RootElement.GetProperty("data").GetProperty("matches");
+                Check(matches.GetArrayLength() == 1, "Expected one shape-model match.");
+                Check(matches[0].GetProperty("score").GetDouble() >= 0.9, "Shape-model score is unexpectedly low.");
+            });
+
+            await TestAsync("interactive calibration fitting and validation", async () =>
+            {
+                var modelPath = Path.Combine(runtimeDirectory, "calibration", "interactive-test.json");
+                var csvPath = Path.Combine(runtimeDirectory, "calibration", "interactive-test.csv");
+                using var response = await SendAsync(port, new
+                {
+                    requestId = "calibration-1",
+                    command = "calibrate_points",
+                    parameters = new
+                    {
+                        modelPath,
+                        csvPath,
+                        points = new object[]
+                        {
+                            new { row = 0, column = 0, machineX = 0, machineY = 0, useForFit = true },
+                            new { row = 0, column = 100, machineX = 10, machineY = 0, useForFit = true },
+                            new { row = 100, column = 0, machineX = 0, machineY = 10, useForFit = true },
+                            new { row = 100, column = 100, machineX = 10, machineY = 10, useForFit = false }
+                        }
+                    }
+                });
+                Equal(true, response.RootElement.GetProperty("ok").GetBoolean());
+                var model = response.RootElement.GetProperty("data").GetProperty("model");
+                Near(0, model.GetProperty("rmseMm").GetDouble(), 1e-9);
+                Near(0, model.GetProperty("maxValidationErrorMm").GetDouble(), 1e-9);
+                Check(File.Exists(modelPath) && File.Exists(csvPath), "Calibration artifacts were not saved.");
             });
 
             await TestAsync("local shutdown", async () =>

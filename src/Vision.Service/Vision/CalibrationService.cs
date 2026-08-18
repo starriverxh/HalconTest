@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using HalconDotNet;
 using Vision.Service.Configuration;
+using Vision.Service.Workbench;
 
 namespace Vision.Service.Vision;
 
@@ -31,6 +32,26 @@ public sealed class CalibrationService
         }
 
         var points = ParsePoints(bytes);
+        return (await CalibrateCoreAsync(points, options.ModelFile, fingerprint, cancellationToken).ConfigureAwait(false)).Model;
+    }
+
+    public Task<CalibrationFitResult> CalibrateAsync(
+        IReadOnlyList<CalibrationPointInput> points,
+        string modelPath,
+        CancellationToken cancellationToken = default)
+    {
+        var fingerprintBytes = JsonSerializer.SerializeToUtf8Bytes(points, RecipeJson.Options);
+        var fingerprint = Convert.ToHexString(SHA256.HashData(fingerprintBytes));
+        return CalibrateCoreAsync(points, modelPath, fingerprint, cancellationToken);
+    }
+
+    private static async Task<CalibrationFitResult> CalibrateCoreAsync(
+        IReadOnlyList<CalibrationPointInput> points,
+        string modelPath,
+        string fingerprint,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
         var fitPoints = points.Where(point => point.UseForFit).ToArray();
         var validationPoints = points.Where(point => !point.UseForFit).ToArray();
         if (fitPoints.Length < 3)
@@ -38,17 +59,21 @@ public sealed class CalibrationService
             throw new InvalidDataException("Calibration requires at least three fit points.");
         }
 
+        if (!ContainsNonCollinearImagePoints(fitPoints))
+        {
+            throw new InvalidDataException("Calibration fit points are collinear; distribute points across the full image area.");
+        }
+
         using var imageColumns = new HTuple(fitPoints.Select(point => point.Column).ToArray());
         using var imageRows = new HTuple(fitPoints.Select(point => point.Row).ToArray());
-        using var machineX = new HTuple(fitPoints.Select(point => point.Xmm).ToArray());
-        using var machineY = new HTuple(fitPoints.Select(point => point.Ymm).ToArray());
+        using var machineX = new HTuple(fitPoints.Select(point => point.MachineX).ToArray());
+        using var machineY = new HTuple(fitPoints.Select(point => point.MachineY).ToArray());
         HOperatorSet.VectorToHomMat2d(imageColumns, imageRows, machineX, machineY, out HTuple homMat2D);
         using (homMat2D)
         {
-            var fitErrors = TransformAndCalculateErrors(homMat2D, fitPoints);
-            var validationErrors = validationPoints.Length == 0
-                ? []
-                : TransformAndCalculateErrors(homMat2D, validationPoints);
+            var evaluations = TransformAndEvaluate(homMat2D, points);
+            var fitErrors = evaluations.Where(point => point.UseForFit).Select(point => point.ErrorMm).ToArray();
+            var validationErrors = evaluations.Where(point => !point.UseForFit).Select(point => point.ErrorMm).ToArray();
             var model = new CalibrationModel(
                 homMat2D.ToDArr(),
                 Math.Sqrt(fitErrors.Sum(error => error * error) / fitErrors.Length),
@@ -58,16 +83,19 @@ public sealed class CalibrationService
                 fingerprint,
                 DateTimeOffset.UtcNow);
 
-            var directory = Path.GetDirectoryName(options.ModelFile)
+            var fullModelPath = Path.GetFullPath(modelPath);
+            var directory = Path.GetDirectoryName(fullModelPath)
                 ?? throw new InvalidOperationException("Calibration model directory is unavailable.");
             Directory.CreateDirectory(directory);
-            await using var output = new FileStream(options.ModelFile, FileMode.Create, FileAccess.Write, FileShare.Read);
+            await using var output = new FileStream(fullModelPath, FileMode.Create, FileAccess.Write, FileShare.Read);
             await JsonSerializer.SerializeAsync(output, model, RecipeJson.Options, cancellationToken).ConfigureAwait(false);
-            return model;
+            return new CalibrationFitResult(model, evaluations, fullModelPath, null);
         }
     }
 
-    private static double[] TransformAndCalculateErrors(HTuple homMat2D, IReadOnlyList<CalibrationPoint> points)
+    private static IReadOnlyList<CalibrationPointEvaluation> TransformAndEvaluate(
+        HTuple homMat2D,
+        IReadOnlyList<CalibrationPointInput> points)
     {
         using var columns = new HTuple(points.Select(point => point.Column).ToArray());
         using var rows = new HTuple(points.Select(point => point.Row).ToArray());
@@ -78,14 +106,22 @@ public sealed class CalibrationService
             var xValues = transformedX.ToDArr();
             var yValues = transformedY.ToDArr();
             return Enumerable.Range(0, points.Count)
-                .Select(index => Math.Sqrt(
-                    Math.Pow(xValues[index] - points[index].Xmm, 2) +
-                    Math.Pow(yValues[index] - points[index].Ymm, 2)))
+                .Select(index => new CalibrationPointEvaluation(
+                    points[index].Row,
+                    points[index].Column,
+                    points[index].MachineX,
+                    points[index].MachineY,
+                    points[index].UseForFit,
+                    xValues[index],
+                    yValues[index],
+                    Math.Sqrt(
+                        Math.Pow(xValues[index] - points[index].MachineX, 2) +
+                        Math.Pow(yValues[index] - points[index].MachineY, 2))))
                 .ToArray();
         }
     }
 
-    private static CalibrationPoint[] ParsePoints(byte[] bytes)
+    private static CalibrationPointInput[] ParsePoints(byte[] bytes)
     {
         var lines = System.Text.Encoding.UTF8.GetString(bytes)
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -97,17 +133,39 @@ public sealed class CalibrationService
                 throw new InvalidDataException($"Calibration CSV line {index + 2} must contain five columns.");
             }
 
-            return new CalibrationPoint(
-                ParseDouble(values[0]),
-                ParseDouble(values[1]),
-                ParseDouble(values[2]),
-                ParseDouble(values[3]),
-                bool.Parse(values[4]));
+            return new CalibrationPointInput
+            {
+                Row = ParseDouble(values[0]),
+                Column = ParseDouble(values[1]),
+                MachineX = ParseDouble(values[2]),
+                MachineY = ParseDouble(values[3]),
+                UseForFit = bool.Parse(values[4])
+            };
         }).ToArray();
     }
 
     private static double ParseDouble(string text) =>
         double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture);
 
-    private sealed record CalibrationPoint(double Row, double Column, double Xmm, double Ymm, bool UseForFit);
+    private static bool ContainsNonCollinearImagePoints(IReadOnlyList<CalibrationPointInput> points)
+    {
+        for (var first = 0; first < points.Count - 2; first++)
+        {
+            for (var second = first + 1; second < points.Count - 1; second++)
+            {
+                for (var third = second + 1; third < points.Count; third++)
+                {
+                    var twiceArea =
+                        (points[second].Column - points[first].Column) * (points[third].Row - points[first].Row) -
+                        (points[third].Column - points[first].Column) * (points[second].Row - points[first].Row);
+                    if (Math.Abs(twiceArea) > 1e-6)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
 }

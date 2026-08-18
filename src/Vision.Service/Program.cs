@@ -3,6 +3,7 @@ using Vision.Service.Communication;
 using Vision.Service.Configuration;
 using Vision.Service.Storage;
 using Vision.Service.Vision;
+using Vision.Service.Workbench;
 
 namespace Vision.Service;
 
@@ -14,7 +15,8 @@ public static class Program
         {
             var options = ServiceOptions.Parse(args);
             await using var backend = await CreateBackendAsync(options).ConfigureAwait(false);
-            await using var server = new VisionTcpServer(options, backend);
+            var workbench = new VisionWorkbenchService(options.RuntimeDirectory);
+            await using var server = new VisionTcpServer(options, backend, workbench);
             using var shutdownSource = new CancellationTokenSource();
             Console.CancelKeyPress += (_, eventArgs) =>
             {

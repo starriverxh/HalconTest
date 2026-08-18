@@ -9,6 +9,8 @@ runtime/logs/
 runtime/results/
 runtime/images/
 runtime/calibration/
+runtime/models/
+runtime/previews/
 halcon/calibration/*.dat
 halcon/models/*.shm
 halcon/models/*.ncm

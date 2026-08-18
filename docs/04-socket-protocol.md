@@ -57,7 +57,26 @@ HALCON后端当前返回：
 
 默认只允许回环地址关闭。生产中通常由Windows服务管理器管理进程。
 
-## 3. 状态和错误码
+## 3. 工程调试命令
+
+以下命令供 WPF 工程工作台使用，不是 PLC 的生产触发命令：
+
+| command | 作用 | 关键 HALCON 算子 |
+|---|---|---|
+| `preview_processing` | ROI 内 Blob 预览 | `reduce_domain`, `threshold`, `connection`, `select_shape` |
+| `create_template` | 创建并保存形状模型 | `create_shape_model`, `write_shape_model` |
+| `match_template` | 读取并匹配形状模型 | `read_shape_model`, `find_shape_model` |
+| `calibrate_points` | 用示教点拟合并保存标定 | `vector_to_hom_mat2d`, `affine_trans_point_2d` |
+
+例如 Blob 预览：
+
+~~~json
+{"requestId":"eng-1","command":"preview_processing","timeoutMs":10000,"parameters":{"imagePath":"C:\\images\\pcb.png","roi":{"row1":200,"column1":100,"row2":400,"column2":900},"thresholdMin":0,"thresholdMax":65,"minRadiusPx":15,"maxRadiusPx":22,"minCircularity":0.85}}
+~~~
+
+工程命令仅接受本机回环连接，并与生产检测共用互斥保护，避免调参、创建模型和生产触发同时运行。
+
+## 4. 状态和错误码
 
 `status` 返回ready/busy、后端就绪、启动时间、连接数、成功/失败次数和进程号。
 
@@ -77,7 +96,7 @@ HALCON后端当前返回：
 
 真实相机版本还应把BACKEND_ERROR细分为CAMERA_OFFLINE、ACQUISITION_TIMEOUT、TARGET_NOT_FOUND、LOW_SCORE、CALIBRATION_INVALID和CORRECTION_OUT_OF_RANGE等工艺错误。
 
-## 4. 上位机规则
+## 5. 上位机规则
 
 1. 连接失败有限次数重连，禁止无限快速重试。
 2. 同一零件使用唯一requestId。
@@ -87,4 +106,3 @@ HALCON后端当前返回：
 6. Socket不承担相机微秒级曝光同步，硬触发由PLC/运动控制器完成。
 
 报文文件位于 `protocol/examples.ndjson`，纯C#调用位于 `src/Trigger.Client/Program.cs`。
-

@@ -6,6 +6,7 @@ using System.Text.Json;
 using Vision.Service.Configuration;
 using Vision.Service.Storage;
 using Vision.Service.Vision;
+using Vision.Service.Workbench;
 
 namespace Vision.Service.Communication;
 
@@ -13,10 +14,12 @@ public sealed class VisionTcpServer : IAsyncDisposable
 {
     private readonly ServiceOptions _options;
     private readonly IVisionBackend _backend;
+    private readonly IVisionWorkbench? _workbench;
     private readonly ResultLogger _store;
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _stopSource = new();
     private readonly SemaphoreSlim _triggerGate = new(1, 1);
+    private readonly SemaphoreSlim _workbenchGate = new(1, 1);
     private readonly object _clientTasksLock = new();
     private readonly HashSet<Task> _clientTasks = [];
     private long _acceptedConnections;
@@ -24,7 +27,7 @@ public sealed class VisionTcpServer : IAsyncDisposable
     private long _failedTriggers;
     private DateTimeOffset? _startedUtc;
 
-    public VisionTcpServer(ServiceOptions options, IVisionBackend backend)
+    public VisionTcpServer(ServiceOptions options, IVisionBackend backend, IVisionWorkbench? workbench = null)
     {
         if (options.DefaultTimeoutMs > options.MaximumTimeoutMs)
         {
@@ -33,6 +36,7 @@ public sealed class VisionTcpServer : IAsyncDisposable
 
         _options = options;
         _backend = backend;
+        _workbench = workbench;
         _store = new ResultLogger(options.RuntimeDirectory);
         _listener = new TcpListener(options.ListenAddress, options.Port);
     }
@@ -220,6 +224,18 @@ public sealed class VisionTcpServer : IAsyncDisposable
             "status" => new CommandOutcome(Success(requestId, command, "Status returned.",
                 BuildStatus(), stopwatch.ElapsedMilliseconds), false),
             "trigger" => new CommandOutcome(await TriggerAsync(request, requestId, command, stopwatch, serverToken).ConfigureAwait(false), false),
+            "preview_processing" => new CommandOutcome(await WorkbenchAsync<ProcessingRequest, ProcessingResult>(
+                request, requestId, command, remoteEndpoint, stopwatch, serverToken,
+                (parameters, token) => _workbench!.PreviewProcessingAsync(parameters, token)).ConfigureAwait(false), false),
+            "create_template" => new CommandOutcome(await WorkbenchAsync<ShapeModelCreateRequest, ShapeModelCreateResult>(
+                request, requestId, command, remoteEndpoint, stopwatch, serverToken,
+                (parameters, token) => _workbench!.CreateShapeModelAsync(parameters, token)).ConfigureAwait(false), false),
+            "match_template" => new CommandOutcome(await WorkbenchAsync<ShapeModelMatchRequest, ShapeModelMatchResult>(
+                request, requestId, command, remoteEndpoint, stopwatch, serverToken,
+                (parameters, token) => _workbench!.MatchShapeModelAsync(parameters, token)).ConfigureAwait(false), false),
+            "calibrate_points" => new CommandOutcome(await WorkbenchAsync<CalibrationFitRequest, CalibrationFitResult>(
+                request, requestId, command, remoteEndpoint, stopwatch, serverToken,
+                (parameters, token) => _workbench!.FitCalibrationAsync(parameters, token)).ConfigureAwait(false), false),
             "shutdown" => Shutdown(requestId, command, remoteEndpoint, stopwatch),
             _ => new CommandOutcome(Error(requestId, command, ErrorCodes.UnknownCommand,
                 $"Unknown command '{command}'.", stopwatch.ElapsedMilliseconds), false)
@@ -234,6 +250,106 @@ public sealed class VisionTcpServer : IAsyncDisposable
             remote = remoteEndpoint?.ToString()
         }).ConfigureAwait(false);
         return outcome;
+    }
+
+    private async Task<VisionResponse> WorkbenchAsync<TRequest, TResult>(
+        VisionRequest request,
+        string requestId,
+        string command,
+        IPEndPoint? remoteEndpoint,
+        Stopwatch stopwatch,
+        CancellationToken serverToken,
+        Func<TRequest, CancellationToken, Task<TResult>> operation)
+        where TRequest : class
+    {
+        if (remoteEndpoint is null || !IPAddress.IsLoopback(remoteEndpoint.Address))
+        {
+            return Error(requestId, command, ErrorCodes.Forbidden,
+                "HALCON engineering commands are restricted to the local workstation.", stopwatch.ElapsedMilliseconds);
+        }
+
+        if (_workbench is null)
+        {
+            return Error(requestId, command, ErrorCodes.BackendError,
+                "The HALCON engineering workbench is not enabled.", stopwatch.ElapsedMilliseconds);
+        }
+
+        if (request.Parameters is not { ValueKind: JsonValueKind.Object } parametersElement)
+        {
+            return Error(requestId, command, ErrorCodes.InvalidRequest,
+                "A JSON parameters object is required.", stopwatch.ElapsedMilliseconds);
+        }
+
+        TRequest? parameters;
+        try
+        {
+            parameters = parametersElement.Deserialize<TRequest>(Protocol.JsonOptions);
+        }
+        catch (JsonException exception)
+        {
+            return Error(requestId, command, ErrorCodes.InvalidRequest,
+                $"Invalid workbench parameters: {exception.Message}", stopwatch.ElapsedMilliseconds);
+        }
+
+        if (parameters is null)
+        {
+            return Error(requestId, command, ErrorCodes.InvalidRequest,
+                "Workbench parameters are empty.", stopwatch.ElapsedMilliseconds);
+        }
+
+        if (!await _triggerGate.WaitAsync(0, serverToken).ConfigureAwait(false))
+        {
+            return Error(requestId, command, ErrorCodes.Busy,
+                "Production inspection or another engineering operation is running.", stopwatch.ElapsedMilliseconds);
+        }
+
+        var workbenchGateAcquired = false;
+        if (!await _workbenchGate.WaitAsync(0).ConfigureAwait(false))
+        {
+            _triggerGate.Release();
+            return Error(requestId, command, ErrorCodes.Busy,
+                "Another engineering operation is running.", stopwatch.ElapsedMilliseconds);
+        }
+
+        workbenchGateAcquired = true;
+
+        try
+        {
+            var timeoutMs = Math.Clamp(request.TimeoutMs ?? _options.DefaultTimeoutMs, 1, _options.MaximumTimeoutMs);
+            using var timeoutSource = new CancellationTokenSource(timeoutMs);
+            using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(serverToken, timeoutSource.Token);
+            try
+            {
+                var result = await operation(parameters, linkedSource.Token).ConfigureAwait(false);
+                return Success(requestId, command, "HALCON engineering operation completed.", result,
+                    stopwatch.ElapsedMilliseconds);
+            }
+            catch (OperationCanceledException) when (timeoutSource.IsCancellationRequested && !serverToken.IsCancellationRequested)
+            {
+                return Error(requestId, command, ErrorCodes.Timeout,
+                    $"Engineering operation exceeded the {timeoutMs} ms timeout.", stopwatch.ElapsedMilliseconds);
+            }
+            catch (OperationCanceledException)
+            {
+                return Error(requestId, command, ErrorCodes.Cancelled,
+                    "Engineering operation was cancelled.", stopwatch.ElapsedMilliseconds);
+            }
+            catch (Exception exception)
+            {
+                await SafeLogAsync("Error", "workbench_error", new { requestId, command, exception = exception.ToString() })
+                    .ConfigureAwait(false);
+                return Error(requestId, command, ErrorCodes.BackendError, exception.Message, stopwatch.ElapsedMilliseconds);
+            }
+        }
+        finally
+        {
+            if (workbenchGateAcquired)
+            {
+                _workbenchGate.Release();
+            }
+
+            _triggerGate.Release();
+        }
     }
 
     private async Task<VisionResponse> TriggerAsync(
@@ -327,6 +443,8 @@ public sealed class VisionTcpServer : IAsyncDisposable
     {
         state = _triggerGate.CurrentCount == 0 ? "busy" : "ready",
         busy = _triggerGate.CurrentCount == 0,
+        workbenchBusy = _workbenchGate.CurrentCount == 0,
+        workbenchEnabled = _workbench is not null,
         backend = _backend.Name,
         backendReady = _backend.IsReady,
         startedUtc = _startedUtc,
@@ -368,6 +486,7 @@ public sealed class VisionTcpServer : IAsyncDisposable
         RequestStop();
         _stopSource.Dispose();
         _triggerGate.Dispose();
+        _workbenchGate.Dispose();
         await _backend.DisposeAsync().ConfigureAwait(false);
     }
 

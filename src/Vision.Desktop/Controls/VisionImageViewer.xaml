@@ -1,0 +1,25 @@
+<UserControl x:Class="Vision.Desktop.Controls.VisionImageViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#050A12"
+             Focusable="True">
+    <Grid x:Name="ViewerRoot"
+          Background="Transparent"
+          ClipToBounds="True"
+          MouseLeftButtonDown="OnMouseLeftButtonDown"
+          MouseLeftButtonUp="OnMouseLeftButtonUp"
+          MouseMove="OnMouseMove"
+          MouseLeave="OnMouseLeave"
+          SizeChanged="OnViewerSizeChanged">
+        <Image x:Name="ImageElement" Source="{Binding Source, RelativeSource={RelativeSource AncestorType=UserControl}}" Stretch="Uniform" />
+        <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False" />
+        <Border HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="10"
+                Padding="7,4"
+                Background="#B30B1424"
+                CornerRadius="4">
+            <TextBlock Foreground="#DCE8F5" FontFamily="Consolas" Text="{Binding CursorText, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+        </Border>
+    </Grid>
+</UserControl>

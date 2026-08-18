@@ -53,6 +53,110 @@ public sealed class VisionServiceClient
             root.GetProperty("durationMs").GetInt64());
     }
 
+    public Task<ProcessingViewData> PreviewProcessingAsync(
+        string host,
+        int port,
+        string imagePath,
+        RectangleRoiData? roi,
+        double thresholdMin,
+        double thresholdMax,
+        double minRadiusPx,
+        double maxRadiusPx,
+        double minCircularity,
+        CancellationToken cancellationToken = default) =>
+        SendWorkbenchAsync<ProcessingViewData>(host, port, "preview_processing", new
+        {
+            imagePath,
+            roi,
+            thresholdMin,
+            thresholdMax,
+            minRadiusPx,
+            maxRadiusPx,
+            minCircularity
+        }, cancellationToken);
+
+    public Task<ShapeModelCreateViewData> CreateShapeModelAsync(
+        string host,
+        int port,
+        string imagePath,
+        RectangleRoiData? roi,
+        string modelName,
+        double angleStartDeg,
+        double angleExtentDeg,
+        int contrast,
+        CancellationToken cancellationToken = default) =>
+        SendWorkbenchAsync<ShapeModelCreateViewData>(host, port, "create_template", new
+        {
+            imagePath,
+            roi,
+            modelName,
+            angleStartDeg,
+            angleExtentDeg,
+            contrast
+        }, cancellationToken);
+
+    public Task<ShapeModelMatchViewData> MatchShapeModelAsync(
+        string host,
+        int port,
+        string imagePath,
+        string modelPath,
+        double angleStartDeg,
+        double angleExtentDeg,
+        double minScore,
+        int numMatches,
+        double maxOverlap,
+        CancellationToken cancellationToken = default) =>
+        SendWorkbenchAsync<ShapeModelMatchViewData>(host, port, "match_template", new
+        {
+            imagePath,
+            modelPath,
+            angleStartDeg,
+            angleExtentDeg,
+            minScore,
+            numMatches,
+            maxOverlap
+        }, cancellationToken);
+
+    public Task<CalibrationFitViewData> FitCalibrationAsync(
+        string host,
+        int port,
+        IReadOnlyList<CalibrationPointRow> points,
+        string modelPath,
+        string csvPath,
+        CancellationToken cancellationToken = default) =>
+        SendWorkbenchAsync<CalibrationFitViewData>(host, port, "calibrate_points", new
+        {
+            points = points.Select(point => new
+            {
+                point.Row,
+                point.Column,
+                point.MachineX,
+                point.MachineY,
+                point.UseForFit
+            }),
+            modelPath,
+            csvPath
+        }, cancellationToken);
+
+    private static async Task<T> SendWorkbenchAsync<T>(
+        string host,
+        int port,
+        string command,
+        object parameters,
+        CancellationToken cancellationToken)
+    {
+        using var document = await SendAsync(host, port, new
+        {
+            requestId = $"ui-{command}-{Guid.NewGuid():N}",
+            command,
+            timeoutMs = 30_000,
+            parameters
+        }, cancellationToken).ConfigureAwait(false);
+        EnsureSuccess(document.RootElement);
+        return document.RootElement.GetProperty("data").Deserialize<T>(JsonOptions)
+            ?? throw new InvalidDataException($"The service returned empty data for '{command}'.");
+    }
+
     private static async Task<JsonDocument> SendAsync(
         string host,
         int port,

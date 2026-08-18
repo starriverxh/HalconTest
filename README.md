@@ -43,7 +43,7 @@ Vision.Service.exe
 
 双击：`scripts\04_verify_all.cmd`
 
-验证内容包括：解决方案编译、7项Socket测试、C# HalconDotNet离线视觉闭环和HDevelop学习程序。
+验证内容包括：解决方案编译、12项 Socket/HALCON 测试、C# HalconDotNet 离线视觉闭环和 HDevelop 学习程序。
 
 离线视觉期望结果：
 
@@ -66,7 +66,19 @@ Score      = 1.000
 
 保持服务窗口运行，再双击：`scripts\06_start_desktop.cmd`
 
-界面使用 `CommunityToolkit.Mvvm`，支持测试连接、选择离线图片、触发检测、图像预览、结果显示和运行日志。
+界面使用 `CommunityToolkit.Mvvm`，现包含四个真实功能页：
+
+1. 运行检测；
+2. 鼠标绘制 ROI、Blob 参数预览、原图/二值图切换；
+3. HALCON Shape Model 创建、`.shm` 保存和匹配；
+4. 点击取像素点、机械 X/Y 录入、九点拟合、独立验证和误差表。
+
+工程界面通过 Socket 调用服务端 HALCON 算子，不在 WPF 内伪造算法结果。完整用法见
+[视觉开发工作台学习与调机 SOP](docs/08-vision-workbench-learning-sop.md)。
+
+### 也可以一次启动两个程序
+
+先关闭占用 9100 端口的旧服务，再双击：`scripts\07_start_workstation.cmd`。
 
 ### 4. 不开界面直接触发
 
@@ -97,12 +109,17 @@ src/
 │  │  ├─ PinInspectionService.cs
 │  │  ├─ VisionBackend.cs
 │  │  └─ VisionResult.cs
+│  ├─ Workbench/
+│  │  ├─ IVisionWorkbench.cs
+│  │  ├─ VisionWorkbenchService.cs    # ROI/Blob/模板/交互标定的真实HALCON算子
+│  │  └─ WorkbenchModels.cs
 │  └─ Storage/
 │     ├─ ImageStore.cs
 │     └─ ResultLogger.cs
 │
 ├─ Vision.Desktop/                    # WPF操作端
 │  ├─ MainWindow.xaml
+│  ├─ Controls/VisionImageViewer.*    # 图像像素坐标换算、ROI和结果叠加
 │  ├─ ViewModels/MainViewModel.cs
 │  └─ Services/VisionServiceClient.cs
 │
@@ -143,6 +160,8 @@ runtime/images/       原始检测图
 runtime/results/      单次检测JSON
 runtime/logs/         服务JSONL日志
 runtime/calibration/  C#生成的标定模型
+runtime/models/       工作台生成的HALCON形状模型
+runtime/previews/     工作台生成的二值预览
 ```
 
 这些运行文件默认不提交Git。
@@ -150,6 +169,7 @@ runtime/calibration/  C#生成的标定模型
 ## 深入学习
 
 - [C# HALCON生产开发流程](docs/07-csharp-halcon-production-development.md)
+- [视觉开发工作台学习与调机 SOP](docs/08-vision-workbench-learning-sop.md)
 - [需求与架构](docs/01-requirements-and-architecture.md)
 - [相机、镜头、光源选型](docs/02-optics-and-hardware-selection.md)
 - [标定和调机](docs/03-calibration-halcon-and-commissioning.md)
