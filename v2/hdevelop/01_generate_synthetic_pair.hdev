@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 01 - Generate a deterministic PCB image and an independent up-view pin image.</c>
+<c>* The images stay in memory. Inspect BoardImage and PinImage in the variable window.</c>
+<l>gen_image_const (BoardImageZero, 'byte', 1000, 600)</l>
+<l>get_domain (BoardImageZero, BoardImageDomain)</l>
+<l>paint_region (BoardImageDomain, BoardImageZero, BoardImageBase, 80, 'fill')</l>
+<l>gen_rectangle1 (BoardRegion, 35, 35, 565, 965)</l>
+<l>paint_region (BoardRegion, BoardImageBase, BoardImage1, 125, 'fill')</l>
+<l>BoardRows := [300,300,300,300,300]</l>
+<l>BoardColumns := [190,345,500,655,810]</l>
+<l>gen_circle (BoardPads, BoardRows, BoardColumns, [34,34,34,34,34])</l>
+<l>paint_region (BoardPads, BoardImage1, BoardImage2, 205, 'fill')</l>
+<l>gen_circle (BoardHoles, BoardRows, BoardColumns, [18,18,18,18,18])</l>
+<l>paint_region (BoardHoles, BoardImage2, BoardImage, 15, 'fill')</l>
+<l>gen_image_const (PinImageZero, 'byte', 760, 100)</l>
+<l>get_domain (PinImageZero, PinImageDomain)</l>
+<l>paint_region (PinImageDomain, PinImageZero, PinImageBase, 225, 'fill')</l>
+<l>PinRows := [50,50,50,50,50]</l>
+<l>PinColumns := [70,225,380,535,690]</l>
+<l>gen_circle (PinTips, PinRows, PinColumns, [16,16,16,16,16])</l>
+<l>paint_region (PinTips, PinImageBase, PinImage, 15, 'fill')</l>
+<l>get_image_size (BoardImage, BoardWidth, BoardHeight)</l>
+<l>get_image_size (PinImage, PinWidth, PinHeight)</l>
+<l>SyntheticGenerationPassed := BoardWidth == 1000 and BoardHeight == 600 and PinWidth == 760 and PinHeight == 100</l>
+</body>
+</procedure>
+</hdevelop>

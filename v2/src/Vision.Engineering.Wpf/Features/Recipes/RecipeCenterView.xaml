@@ -1,0 +1,27 @@
+<UserControl x:Class="VisionSystem.Engineering.Wpf.Features.Recipes.RecipeCenterView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="190" /></Grid.RowDefinitions>
+        <Border Style="{StaticResource PanelBorder}" Margin="0,0,0,10">
+            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid Margin="0,0,0,8"><TextBlock FontSize="16" FontWeight="SemiBold" Text="版本化配方" /><StackPanel HorizontalAlignment="Right" Orientation="Horizontal"><Button Margin="4,0" Command="{Binding CloneDraftCommand}" Content="从活动版本复制草稿" /><Button Margin="4,0" Style="{StaticResource PrimaryButton}" Command="{Binding ValidateDraftCommand}" Content="校验草稿" /><Button Margin="4,0" Style="{StaticResource DangerButton}" Command="{Binding AttemptActivateCommand}" Content="尝试激活（将被拒绝）" /></StackPanel></Grid>
+                <DataGrid Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" ItemsSource="{Binding Versions}" SelectedItem="{Binding SelectedVersion}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="版本" Binding="{Binding Version}" Width="130" />
+                        <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="130" />
+                        <DataGridTextColumn Header="作者" Binding="{Binding Author}" Width="120" />
+                        <DataGridTextColumn Header="更新时间" Binding="{Binding Updated, StringFormat=yyyy-MM-dd HH:mm}" Width="150" />
+                        <DataGridTextColumn Header="ShapeModel" Binding="{Binding Model}" Width="120" />
+                        <DataGridTextColumn Header="Calibration" Binding="{Binding Calibration}" Width="140" />
+                        <DataGridTextColumn Header="Regression" Binding="{Binding Regression}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Border Style="{StaticResource PanelBorder}" Margin="0,0,5,0"><StackPanel><TextBlock FontWeight="SemiBold" Text="与活动版本的Diff" /><ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Differences}"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Margin="0,3" FontFamily="Consolas" Foreground="#7DD3FC" Text="{Binding StringFormat=• {0}}" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></StackPanel></Border>
+            <Border Grid.Column="1" Style="{StaticResource PanelBorder}" Margin="5,0,0,0"><StackPanel><TextBlock FontWeight="SemiBold" Text="生命周期" /><TextBlock Margin="0,8,0,0" Foreground="#A7F3D0" Text="Draft → Validated → Approved → Active → Retired" /><Border Margin="0,10,0,0" Padding="10" Background="#301515" CornerRadius="5"><TextBlock Foreground="#FCA5A5" Text="{Binding WorkflowMessage}" TextWrapping="Wrap" /></Border></StackPanel></Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 07 - A visible tool point traces a circle around the physical T-axis pivot.</c>
+<c>* Capture clockwise and counter-clockwise series separately on real equipment.</c>
+<l>TrueCenterX := 15.0</l>
+<l>TrueCenterY := 16.0</l>
+<l>ToolRadiusMm := 6.2</l>
+<l>AnglesDeg := [-180,-150,-120,-90,-60,-30,0,30,60,90,120,150,180]</l>
+<l>AnglesRad := rad(AnglesDeg)</l>
+<l>ObservedX := TrueCenterX + ToolRadiusMm * cos(AnglesRad)</l>
+<l>ObservedY := TrueCenterY + ToolRadiusMm * sin(AnglesRad)</l>
+<l>gen_contour_polygon_xld (RotationTrace, ObservedY, ObservedX)</l>
+<l>fit_circle_contour_xld (RotationTrace, 'algebraic', -1, 1, 0, 3, 2.0, FittedCenterY, FittedCenterX, FittedRadius, StartPhi, EndPhi, PointOrder)</l>
+<l>CenterErrorMm := sqrt((FittedCenterX - TrueCenterX) * (FittedCenterX - TrueCenterX) + (FittedCenterY - TrueCenterY) * (FittedCenterY - TrueCenterY))</l>
+<c>* Synthetic direction-dependent offset demonstrates the separate backlash gate.</c>
+<l>ClockwiseEndpointX := ObservedX[0]</l>
+<l>ClockwiseEndpointY := ObservedY[0]</l>
+<l>CounterClockwiseEndpointX := ClockwiseEndpointX + 0.006</l>
+<l>CounterClockwiseEndpointY := ClockwiseEndpointY - 0.004</l>
+<l>DirectionBacklashMm := sqrt((CounterClockwiseEndpointX - ClockwiseEndpointX) * (CounterClockwiseEndpointX - ClockwiseEndpointX) + (CounterClockwiseEndpointY - ClockwiseEndpointY) * (CounterClockwiseEndpointY - ClockwiseEndpointY))</l>
+<l>RotationCenterPassed := CenterErrorMm &lt;= 0.010 and DirectionBacklashMm &lt;= 0.010</l>
+</body>
+</procedure>
+</hdevelop>

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "2.0",
+  "referenceRow": 300.0,
+  "referenceColumn": 500.0,
+  "referenceAngleDeg": 0.0,
+  "productDatum": "PCB_DATUM",
+  "trainingImageFingerprint": "REPLACE_WITH_SHA256",
+  "createdUtc": "2026-08-19T08:00:00Z"
+}

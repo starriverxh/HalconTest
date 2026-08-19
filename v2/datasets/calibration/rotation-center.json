@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "2.0",
+  "sourceFrame": "machine-mm",
+  "rotationCenter": { "xmm": 15.0, "ymm": 16.0 },
+  "zeroOffsetDeg": 0.0,
+  "clockwiseResidualMm": 0.0,
+  "counterClockwiseResidualMm": 0.0,
+  "maximumFitResidualMm": 0.0,
+  "createdUtc": "2026-08-19T08:00:00Z",
+  "notes": "Concept-only synthetic T-axis model. Never activate for real motion."
+}

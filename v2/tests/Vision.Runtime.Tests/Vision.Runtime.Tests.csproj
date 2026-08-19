@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>VisionSystem.Runtime.Tests</RootNamespace>
+    <AssemblyName>VisionSystem.Runtime.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Vision.Contracts/Vision.Contracts.csproj" />
+    <ProjectReference Include="../../src/Vision.Domain/Vision.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Vision.Runtime/RuntimeStation.cs" Link="RuntimeSource/RuntimeStation.cs" />
+    <Compile Include="../../src/Vision.Runtime/IdempotentInspectionQueue.cs" Link="RuntimeSource/IdempotentInspectionQueue.cs" />
+    <Compile Include="../../src/Vision.Runtime/InspectionResultMapper.cs" Link="RuntimeSource/InspectionResultMapper.cs" />
+  </ItemGroup>
+</Project>

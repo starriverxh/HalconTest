@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+  <PropertyGroup>
+    <!-- The training workstation can be intentionally offline. Re-enable NuGet
+         auditing in the connected release pipeline before a production release. -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>VisionSystem.Halcon</RootNamespace>
+    <AssemblyName>VisionSystem.Halcon</AssemblyName>
+    <PlatformTarget>x64</PlatformTarget>
+    <HalconRoot Condition="'$(HALCONROOT)' != ''">$(HALCONROOT)</HalconRoot>
+    <HalconRoot Condition="'$(HalconRoot)' == '' and Exists('D:\Program Files\MVTec\HALCON-23.11-Progress')">D:\Program Files\MVTec\HALCON-23.11-Progress</HalconRoot>
+    <HalconDotNetAssembly>$(HalconRoot)\bin\dotnet35\halcondotnet.dll</HalconDotNetAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Vision.Domain/Vision.Domain.csproj" />
+    <ProjectReference Include="../Vision.Application/Vision.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="halcondotnet">
+      <HintPath>$(HalconDotNetAssembly)</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Smoke/**/*.cs" />
+  </ItemGroup>
+  <Target Name="ValidateHalconDotNet" BeforeTargets="ResolveReferences" Condition="!Exists('$(HalconDotNetAssembly)')">
+    <Error Text="halcondotnet.dll was not found. Install HALCON Runtime/Development and set HALCONROOT." />
+  </Target>
+</Project>

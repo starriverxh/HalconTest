@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 08 - Solve all corresponding pin/hole points, not only two averaged poses.</c>
+<l>HoleX := [8.8,11.9,15.0,18.1,21.2]</l>
+<l>HoleY := [16.0,16.0,16.0,16.0,16.0]</l>
+<l>PivotX := 15.0</l>
+<l>PivotY := 16.0</l>
+<l>InjectedAngleDeg := 0.40</l>
+<l>InjectedAngleRad := rad(InjectedAngleDeg)</l>
+<l>InjectedX := 0.030</l>
+<l>InjectedY := -0.020</l>
+<l>PinX := cos(InjectedAngleRad) * (HoleX - PivotX) - sin(InjectedAngleRad) * (HoleY - PivotY) + PivotX + InjectedX</l>
+<l>PinY := sin(InjectedAngleRad) * (HoleX - PivotX) + cos(InjectedAngleRad) * (HoleY - PivotY) + PivotY + InjectedY</l>
+<l>vector_to_rigid (PinX, PinY, HoleX, HoleY, PinToHoleRigid)</l>
+<l>affine_trans_point_2d (PinToHoleRigid, PinX, PinY, AlignedPinX, AlignedPinY)</l>
+<l>ResidualsMm := sqrt((AlignedPinX - HoleX) * (AlignedPinX - HoleX) + (AlignedPinY - HoleY) * (AlignedPinY - HoleY))</l>
+<l>MaximumResidualMm := max(ResidualsMm)</l>
+<l>RigidAngleRad := atan2(PinToHoleRigid[3], PinToHoleRigid[0])</l>
+<l>RigidAngleDeg := deg(RigidAngleRad)</l>
+<l>RigidTranslationX := PinToHoleRigid[2]</l>
+<l>RigidTranslationY := PinToHoleRigid[5]</l>
+<c>* Convert global rigid translation to RotateAboutPivotThenTranslate axis convention.</c>
+<l>PivotRotationOffsetX := (1 - cos(RigidAngleRad)) * PivotX + sin(RigidAngleRad) * PivotY</l>
+<l>PivotRotationOffsetY := -sin(RigidAngleRad) * PivotX + (1 - cos(RigidAngleRad)) * PivotY</l>
+<l>AxisCommandX := RigidTranslationX - PivotRotationOffsetX</l>
+<l>AxisCommandY := RigidTranslationY - PivotRotationOffsetY</l>
+<l>AxisCommandThetaDeg := RigidAngleDeg</l>
+<l>AlignmentPassed := MaximumResidualMm &lt;= 0.001 and fabs(AxisCommandX) &lt;= 2 and fabs(AxisCommandY) &lt;= 2 and fabs(AxisCommandThetaDeg) &lt;= 2</l>
+</body>
+</procedure>
+</hdevelop>

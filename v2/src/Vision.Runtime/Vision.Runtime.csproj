@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>VisionSystem.Runtime</RootNamespace>
+    <AssemblyName>Vision.Runtime</AssemblyName>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Vision.Contracts/Vision.Contracts.csproj" />
+    <ProjectReference Include="../Vision.Domain/Vision.Domain.csproj" />
+    <ProjectReference Include="../Vision.Application/Vision.Application.csproj" />
+    <ProjectReference Include="../Vision.Infrastructure/Vision.Infrastructure.csproj" />
+    <ProjectReference Include="../Vision.Halcon/Vision.Halcon.csproj" />
+  </ItemGroup>
+</Project>

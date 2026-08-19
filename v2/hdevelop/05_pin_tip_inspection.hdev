@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 05 - The up camera measures every pin, not only the tool carrier.</c>
+<l>gen_image_const (PinImageZero, 'byte', 760, 100)</l>
+<l>get_domain (PinImageZero, PinImageDomain)</l>
+<l>paint_region (PinImageDomain, PinImageZero, PinImageBase, 225, 'fill')</l>
+<l>NominalRows := [50,50,50,50,50]</l>
+<l>NominalColumns := [70,225,380,535,690]</l>
+<l>gen_circle (PinTipRegions, NominalRows, NominalColumns, [16,16,16,16,16])</l>
+<l>paint_region (PinTipRegions, PinImageBase, PinImage, 15, 'fill')</l>
+<l>threshold (PinImage, PinCandidates, 0, 65)</l>
+<l>connection (PinCandidates, ConnectedPins)</l>
+<l>select_shape (ConnectedPins, SelectedPins, ['area','circularity'], 'and', [400,0.80], [1200,1.0])</l>
+<l>area_center (SelectedPins, PinAreas, RowsUnsorted, ColumnsUnsorted)</l>
+<l>tuple_sort_index (ColumnsUnsorted, SortIndices)</l>
+<l>PinRows := RowsUnsorted[SortIndices]</l>
+<l>PinColumns := ColumnsUnsorted[SortIndices]</l>
+<l>PitchPx := []</l>
+<l>for Index := 0 to |PinColumns| - 2 by 1</l>
+<l>    PitchPx := [PitchPx,PinColumns[Index + 1] - PinColumns[Index]]</l>
+<l>endfor</l>
+<l>MeanPitchPx := mean(PitchPx)</l>
+<l>MaximumPitchDeviationPx := max(fabs(PitchPx - MeanPitchPx))</l>
+<l>MeanRow := mean(PinRows)</l>
+<l>MaximumStraightnessPx := max(fabs(PinRows - MeanRow))</l>
+<l>PinInspectionPassed := |PinRows| == 5 and MaximumPitchDeviationPx &lt;= 0.1 and MaximumStraightnessPx &lt;= 0.1</l>
+</body>
+</procedure>
+</hdevelop>

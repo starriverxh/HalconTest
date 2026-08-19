@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 09 - Deterministic dual-image cycle: quality, coarse candidates, XLD fine circles, mapping and rigid alignment.</c>
+<l>gen_image_const (BoardZero, 'byte', 1000, 600)</l>
+<l>get_domain (BoardZero, BoardDomain)</l>
+<l>paint_region (BoardDomain, BoardZero, BoardBase, 80, 'fill')</l>
+<l>gen_rectangle1 (BoardRegion, 35, 35, 565, 965)</l>
+<l>paint_region (BoardRegion, BoardBase, Board1, 125, 'fill')</l>
+<l>gen_circle (BoardHoles, [300,300,300,300,300], [190,345,500,655,810], [18,18,18,18,18])</l>
+<l>paint_region (BoardHoles, Board1, BoardImage, 15, 'fill')</l>
+<l>gen_image_const (PinZero, 'byte', 760, 100)</l>
+<l>get_domain (PinZero, PinDomain)</l>
+<l>paint_region (PinDomain, PinZero, PinBase, 225, 'fill')</l>
+<l>gen_circle (PinTips, [50,50,50,50,50], [70,225,380,535,690], [16,16,16,16,16])</l>
+<l>paint_region (PinTips, PinBase, PinImage, 15, 'fill')</l>
+<c>* Board quality gate.</c>
+<l>gen_rectangle1 (BoardQualityRoi, 230, 120, 370, 880)</l>
+<l>reduce_domain (BoardImage, BoardQualityRoi, BoardQualityImage)</l>
+<l>get_domain (BoardQualityImage, BoardQualityDomain)</l>
+<l>intensity (BoardQualityDomain, BoardQualityImage, BoardMean, BoardDeviation)</l>
+<l>sobel_amp (BoardQualityImage, BoardEdgesAmp, 'sum_abs', 3)</l>
+<l>intensity (BoardQualityDomain, BoardEdgesAmp, BoardEdgeMean, BoardEdgeDeviation)</l>
+<l>BoardQualityPassed := BoardMean &gt;= 20 and BoardMean &lt;= 240 and BoardDeviation &gt;= 5 and BoardEdgeMean &gt;= 1</l>
+<c>* Board coarse blobs then local subpixel contour circles.</c>
+<l>threshold (BoardQualityImage, BoardCandidates, 0, 65)</l>
+<l>connection (BoardCandidates, BoardConnected)</l>
+<l>select_shape (BoardConnected, BoardSelected, ['area','circularity'], 'and', [700,0.85], [1600,1.0])</l>
+<l>area_center (BoardSelected, BoardAreas, BoardCoarseRows, BoardCoarseColumns)</l>
+<l>edges_sub_pix (BoardQualityImage, BoardEdgeContours, 'canny', 1.0, 10, 30)</l>
+<l>fit_circle_contour_xld (BoardEdgeContours, 'atukey', -1, 2.0, 0, 5, 2.0, BoardFitRows, BoardFitColumns, BoardFitRadii, BoardStartPhi, BoardEndPhi, BoardPointOrder)</l>
+<l>BoardFineRows := []</l>
+<l>BoardFineColumns := []</l>
+<l>for Index := 0 to |BoardFitRadii| - 1 by 1</l>
+<l>    if (BoardFitRadii[Index] &gt;= 15 and BoardFitRadii[Index] &lt;= 22)</l>
+<l>        BoardFineRows := [BoardFineRows,BoardFitRows[Index]]</l>
+<l>        BoardFineColumns := [BoardFineColumns,BoardFitColumns[Index]]</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>tuple_sort_index (BoardFineColumns, BoardSort)</l>
+<l>BoardFineRows := BoardFineRows[BoardSort]</l>
+<l>BoardFineColumns := BoardFineColumns[BoardSort]</l>
+<c>* Pin image uses the same coarse-to-fine principle.</c>
+<l>threshold (PinImage, PinCandidates, 0, 65)</l>
+<l>connection (PinCandidates, PinConnected)</l>
+<l>select_shape (PinConnected, PinSelected, ['area','circularity'], 'and', [400,0.80], [1200,1.0])</l>
+<l>area_center (PinSelected, PinAreas, PinCoarseRows, PinCoarseColumns)</l>
+<l>edges_sub_pix (PinImage, PinEdgeContours, 'canny', 1.0, 10, 30)</l>
+<l>fit_circle_contour_xld (PinEdgeContours, 'atukey', -1, 2.0, 0, 5, 2.0, PinFitRows, PinFitColumns, PinFitRadii, PinStartPhi, PinEndPhi, PinPointOrder)</l>
+<l>PinFineRows := []</l>
+<l>PinFineColumns := []</l>
+<l>for Index := 0 to |PinFitRadii| - 1 by 1</l>
+<l>    if (PinFitRadii[Index] &gt;= 13 and PinFitRadii[Index] &lt;= 19)</l>
+<l>        PinFineRows := [PinFineRows,PinFitRows[Index]]</l>
+<l>        PinFineColumns := [PinFineColumns,PinFitColumns[Index]]</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>tuple_sort_index (PinFineColumns, PinSort)</l>
+<l>PinFineRows := PinFineRows[PinSort]</l>
+<l>PinFineColumns := PinFineColumns[PinSort]</l>
+<c>* Independent planar transforms place both cameras in machine millimetres.</c>
+<l>BoardHomMat2D := [0.02,0,5.0,0,0.02,10.0]</l>
+<l>PinHomMat2D := [0.02,0,7.42,0,0.02,15.01]</l>
+<l>affine_trans_point_2d (BoardHomMat2D, BoardFineColumns, BoardFineRows, HoleX, HoleY)</l>
+<l>affine_trans_point_2d (PinHomMat2D, PinFineColumns, PinFineRows, PinX, PinY)</l>
+<l>vector_to_rigid (PinX, PinY, HoleX, HoleY, AlignmentHomMat2D)</l>
+<l>affine_trans_point_2d (AlignmentHomMat2D, PinX, PinY, AlignedPinX, AlignedPinY)</l>
+<l>AlignmentResidualsMm := sqrt((AlignedPinX - HoleX) * (AlignedPinX - HoleX) + (AlignedPinY - HoleY) * (AlignedPinY - HoleY))</l>
+<l>MaximumAlignmentResidualMm := max(AlignmentResidualsMm)</l>
+<l>CorrectionThetaDeg := deg(atan2(AlignmentHomMat2D[3], AlignmentHomMat2D[0]))</l>
+<l>CorrectionXmm := AlignmentHomMat2D[2]</l>
+<l>CorrectionYmm := AlignmentHomMat2D[5]</l>
+<l>CompleteCyclePassed := BoardQualityPassed and |BoardFineRows| == 5 and |PinFineRows| == 5 and MaximumAlignmentResidualMm &lt;= 0.001</l>
+</body>
+</procedure>
+</hdevelop>

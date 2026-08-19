@@ -1,0 +1,49 @@
+{
+  "datasetId": "pcb-pin-row-offline-v2",
+  "version": "1.0.0",
+  "createdUtc": "2026-08-19T08:00:00Z",
+  "cases": [
+    {
+      "id": "nominal-offline-pair",
+      "boardImage": "images/synthetic_pcb_good.png",
+      "pinImage": "images/synthetic_pin_good.pgm",
+      "expectedDisposition": "EngineeringOnly",
+      "expectedFailureCodes": [
+        "AcquisitionNotLive",
+        "PinCameraNotCommissioned",
+        "RecipeNotReleasedForMotion"
+      ],
+      "sha256": {
+        "boardImage": "F38E502A48367F7CD8B79E9C9DF2C9F9788CBC98C9788F79C3DD0F0A1C8ADD77",
+        "pinImage": "D5EACD8C58FAC9D10FE390777969587645C2F8D4C82A586DB2ECDF7B9F150930"
+      }
+    },
+    {
+      "id": "missing-centre-pin",
+      "boardImage": "images/synthetic_pcb_good.png",
+      "pinImage": "images/synthetic_pin_missing.pgm",
+      "expectedDisposition": "Rejected",
+      "expectedFailureCodes": ["AcquisitionNotLive", "PinMissing"],
+      "sha256": {
+        "boardImage": "F38E502A48367F7CD8B79E9C9DF2C9F9788CBC98C9788F79C3DD0F0A1C8ADD77",
+        "pinImage": "2AA88B3ED082C579685496E27487307225D77209DF2C7A2413BEE159435E6573"
+      }
+    },
+    {
+      "id": "bent-last-pin",
+      "boardImage": "images/synthetic_pcb_good.png",
+      "pinImage": "images/synthetic_pin_bent.pgm",
+      "expectedDisposition": "Rejected",
+      "expectedFailureCodes": [
+        "AcquisitionNotLive",
+        "PinBent",
+        "PinCameraNotCommissioned",
+        "RecipeNotReleasedForMotion"
+      ],
+      "sha256": {
+        "boardImage": "F38E502A48367F7CD8B79E9C9DF2C9F9788CBC98C9788F79C3DD0F0A1C8ADD77",
+        "pinImage": "6C771D893A048A52A7FC7E4D28D4B5D4F11C455EEEFA54E211C3479EF0D69798"
+      }
+    }
+  ]
+}

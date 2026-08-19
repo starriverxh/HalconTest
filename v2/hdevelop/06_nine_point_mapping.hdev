@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 06 - Nine points fit an affine plane map; independent points validate it.</c>
+<c>* Real projects first estimate camera intrinsics and lens distortion.</c>
+<l>FitRows := [100,100,100,300,300,300,500,500,500]</l>
+<l>FitColumns := [100,450,800,100,450,800,100,450,800]</l>
+<l>FitNoiseX := [0.001,-0.001,0.000,-0.001,0.001,0.000,0.000,-0.001,0.001]</l>
+<l>FitNoiseY := [0.000,0.001,-0.001,-0.001,0.000,0.001,0.001,-0.001,0.000]</l>
+<l>MachineX := 0.020 * FitColumns + 0.0005 * FitRows + 5.0 + FitNoiseX</l>
+<l>MachineY := -0.0004 * FitColumns + 0.020 * FitRows + 10.0 + FitNoiseY</l>
+<l>vector_to_hom_mat2d (FitColumns, FitRows, MachineX, MachineY, HomMat2D)</l>
+<l>affine_trans_point_2d (HomMat2D, FitColumns, FitRows, FittedX, FittedY)</l>
+<l>FitErrors := sqrt((FittedX - MachineX) * (FittedX - MachineX) + (FittedY - MachineY) * (FittedY - MachineY))</l>
+<l>FitRmseMm := sqrt(sum(FitErrors * FitErrors) / |FitErrors|)</l>
+<l>FitMaximumErrorMm := max(FitErrors)</l>
+<l>ValidationRows := [200,200,400,400]</l>
+<l>ValidationColumns := [275,625,275,625]</l>
+<l>ValidationExpectedX := 0.020 * ValidationColumns + 0.0005 * ValidationRows + 5.0</l>
+<l>ValidationExpectedY := -0.0004 * ValidationColumns + 0.020 * ValidationRows + 10.0</l>
+<l>affine_trans_point_2d (HomMat2D, ValidationColumns, ValidationRows, ValidationX, ValidationY)</l>
+<l>ValidationErrors := sqrt((ValidationX - ValidationExpectedX) * (ValidationX - ValidationExpectedX) + (ValidationY - ValidationExpectedY) * (ValidationY - ValidationExpectedY))</l>
+<l>ValidationMaximumErrorMm := max(ValidationErrors)</l>
+<l>NinePointMappingPassed := FitRmseMm &lt;= 0.010 and ValidationMaximumErrorMm &lt;= 0.020</l>
+</body>
+</procedure>
+</hdevelop>

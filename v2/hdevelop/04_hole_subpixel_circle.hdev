@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 04 - Area center is coarse only. XLD circle fitting supplies the fine center.</c>
+<l>gen_image_const (ImageZero, 'byte', 200, 160)</l>
+<l>get_domain (ImageZero, ImageDomain)</l>
+<l>paint_region (ImageDomain, ImageZero, ImageBase, 180, 'fill')</l>
+<l>gen_circle (HoleRegion, 80.4, 100.7, 18.2)</l>
+<l>paint_region (HoleRegion, ImageBase, Image, 15, 'fill')</l>
+<l>threshold (Image, DarkRegion, 0, 65)</l>
+<l>area_center (DarkRegion, CoarseArea, CoarseRow, CoarseColumn)</l>
+<l>gen_circle (FineSearchRoi, CoarseRow, CoarseColumn, 30)</l>
+<l>reduce_domain (Image, FineSearchRoi, FineImage)</l>
+<l>edges_sub_pix (FineImage, EdgeContours, 'canny', 1.0, 10, 30)</l>
+<l>fit_circle_contour_xld (EdgeContours, 'atukey', -1, 2.0, 0, 5, 2.0, FitRows, FitColumns, FitRadii, StartPhi, EndPhi, PointOrder)</l>
+<l>FineRow := []</l>
+<l>FineColumn := []</l>
+<l>FineRadius := []</l>
+<l>for Index := 0 to |FitRadii| - 1 by 1</l>
+<l>    CenterShift := sqrt((FitRows[Index] - CoarseRow) * (FitRows[Index] - CoarseRow) + (FitColumns[Index] - CoarseColumn) * (FitColumns[Index] - CoarseColumn))</l>
+<l>    if (FitRadii[Index] &gt;= 15 and FitRadii[Index] &lt;= 22 and CenterShift &lt;= 5 and |FineRow| == 0)</l>
+<l>        FineRow := FitRows[Index]</l>
+<l>        FineColumn := FitColumns[Index]</l>
+<l>        FineRadius := FitRadii[Index]</l>
+<l>    endif</l>
+<l>endfor</l>
+<l>SubpixelCirclePassed := |FineRow| == 1 and fabs(FineRow - CoarseRow) &lt; 1.5 and fabs(FineColumn - CoarseColumn) &lt; 1.5</l>
+</body>
+</procedure>
+</hdevelop>

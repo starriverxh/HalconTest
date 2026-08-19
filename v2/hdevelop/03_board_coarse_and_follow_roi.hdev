@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="23.11.0.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* 03 - A shape model supplies only the coarse product pose.</c>
+<c>* Fine hole ROIs follow this pose and are measured in the next stage.</c>
+<l>gen_image_const (ReferenceImageZero, 'byte', 1000, 600)</l>
+<l>get_domain (ReferenceImageZero, ReferenceImageDomain)</l>
+<l>paint_region (ReferenceImageDomain, ReferenceImageZero, ReferenceImageBase, 80, 'fill')</l>
+<l>gen_rectangle1 (BoardRegion, 35, 35, 565, 965)</l>
+<l>paint_region (BoardRegion, ReferenceImageBase, ReferenceImage1, 125, 'fill')</l>
+<l>gen_circle (Holes, [300,300,300,300,300], [190,345,500,655,810], [18,18,18,18,18])</l>
+<l>paint_region (Holes, ReferenceImage1, ReferenceImage2, 15, 'fill')</l>
+<c>* The asymmetric fiducial removes row periodicity and 180-degree ambiguity.</c>
+<l>gen_rectangle2 (Fiducial, 255, 145, 0.35, 24, 10)</l>
+<l>paint_region (Fiducial, ReferenceImage2, ReferenceImage, 230, 'fill')</l>
+<l>gen_rectangle1 (TemplateRoi, 220, 100, 380, 900)</l>
+<l>reduce_domain (ReferenceImage, TemplateRoi, TemplateImage)</l>
+<l>create_shape_model (TemplateImage, 'auto', -0.174533, 0.349066, 'auto', 'auto', 'use_polarity', 20, 'auto', ModelId)</l>
+<l>find_shape_model (ReferenceImage, ModelId, -0.174533, 0.349066, 0.30, 2, 0.5, 'least_squares', 0, 0.9, MatchRows, MatchColumns, MatchAngles, MatchScores)</l>
+<l>if (|MatchScores| &gt; 0)</l>
+<l>    MatchRow := MatchRows[0]</l>
+<l>    MatchColumn := MatchColumns[0]</l>
+<l>    MatchAngle := MatchAngles[0]</l>
+<l>    ReferenceRow := 300</l>
+<l>    ReferenceColumn := 500</l>
+<l>    vector_angle_to_rigid (ReferenceRow, ReferenceColumn, 0, MatchRow, MatchColumn, MatchAngle, FollowHomMat2D)</l>
+<l>    gen_rectangle1 (NominalHoleRowRoi, 265, 150, 335, 850)</l>
+<l>    affine_trans_region (NominalHoleRowRoi, FollowedHoleRowRoi, FollowHomMat2D, 'nearest_neighbor')</l>
+<l>    CoarsePassed := MatchScores[0] &gt;= 0.30</l>
+<l>else</l>
+<l>    gen_empty_region (FollowedHoleRowRoi)</l>
+<l>    CoarsePassed := 0</l>
+<l>endif</l>
+<l>clear_shape_model (ModelId)</l>
+</body>
+</procedure>
+</hdevelop>

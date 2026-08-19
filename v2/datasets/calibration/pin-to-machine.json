@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "2.0",
+  "sourceFrame": "pin-image-pixel",
+  "targetFrame": "machine-mm",
+  "homMat2D": [0.02, 0.0, 7.4, 0.0, 0.02, 15.0],
+  "rmseMm": 0.0,
+  "maximumValidationErrorMm": 0.0,
+  "imageWidth": 760,
+  "imageHeight": 100,
+  "workPlaneZmm": 0.0,
+  "createdUtc": "2026-08-19T08:00:00Z",
+  "cameraSerial": "OFFLINE-PINS",
+  "notes": "Synthetic affine mapping only. Real up-camera calibration is independent of the board camera."
+}

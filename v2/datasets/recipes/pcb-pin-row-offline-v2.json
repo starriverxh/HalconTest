@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "2.0",
+  "recipeId": "pcb-pin-row-offline-v2",
+  "productCode": "TRAINING-PCB-PIN-ROW",
+  "version": 1,
+  "status": "Engineering",
+  "updatedUtc": "2026-08-19T08:00:00Z",
+  "boardCamera": {
+    "mode": "File",
+    "device": "OFFLINE-BOARD",
+    "offlineImagePath": "v2/datasets/images/synthetic_pcb_good.png",
+    "exposureMicroseconds": 1500,
+    "gainDb": 0.0,
+    "acquisitionTimeoutMs": 3000,
+    "triggerMode": "Off"
+  },
+  "pinCamera": {
+    "mode": "File",
+    "device": "OFFLINE-PINS",
+    "offlineImagePath": "v2/datasets/images/synthetic_pin_good.pgm",
+    "exposureMicroseconds": 800,
+    "gainDb": 0.0,
+    "acquisitionTimeoutMs": 3000,
+    "triggerMode": "Off"
+  },
+  "board": {
+    "locatorMode": "BlobRow",
+    "searchRoi": { "row1": 230, "column1": 120, "row2": 370, "column2": 880 },
+    "imageQuality": {
+      "minimumMeanGray": 20,
+      "maximumMeanGray": 240,
+      "minimumGrayDeviation": 5,
+      "minimumMeanEdgeAmplitude": 1,
+      "saturationGray": 250,
+      "maximumSaturatedFraction": 0.25
+    },
+    "holeFeature": {
+      "thresholdMin": 0,
+      "thresholdMax": 65,
+      "minimumAreaPx": 700,
+      "maximumAreaPx": 1600,
+      "minimumCircularity": 0.85,
+      "expectedCount": 5
+    },
+    "shapeModel": {
+      "modelPath": "",
+      "metadataPath": "",
+      "angleStartDeg": -10,
+      "angleExtentDeg": 20,
+      "minimumScore": 0.65,
+      "maximumOverlap": 0.5,
+      "pyramidLevels": 0,
+      "greediness": 0.9
+    },
+    "featureIds": ["P1", "P2", "P3", "P4", "P5"]
+  },
+  "pins": {
+    "enabled": true,
+    "allowEngineeringSimulation": true,
+    "expectedPinCount": 5,
+    "maximumPitchErrorMm": 0.02,
+    "maximumStraightnessErrorMm": 0.02,
+    "engineeringReferencePose": { "xmm": 15.0, "ymm": 16.0, "thetaDeg": 0.0 },
+    "engineeringReferencePins": [
+      { "id": "P1", "point": { "xmm": 8.8, "ymm": 16.0 }, "score": 1.0 },
+      { "id": "P2", "point": { "xmm": 11.9, "ymm": 16.0 }, "score": 1.0 },
+      { "id": "P3", "point": { "xmm": 15.0, "ymm": 16.0 }, "score": 1.0 },
+      { "id": "P4", "point": { "xmm": 18.1, "ymm": 16.0 }, "score": 1.0 },
+      { "id": "P5", "point": { "xmm": 21.2, "ymm": 16.0 }, "score": 1.0 }
+    ]
+  },
+  "calibration": {
+    "boardCameraModelPath": "",
+    "boardToMachineTransformPath": "v2/datasets/calibration/board-to-machine.json",
+    "pinCameraModelPath": "",
+    "pinToMachineTransformPath": "v2/datasets/calibration/pin-to-machine.json",
+    "rotationCenterModelPath": "v2/datasets/calibration/rotation-center.json",
+    "maximumRmseMm": 0.01,
+    "maximumValidationErrorMm": 0.02,
+    "maximumAgeDays": 3650
+  },
+  "correctionTolerance": {
+    "maximumSafeCommandXmm": 2.0,
+    "maximumSafeCommandYmm": 2.0,
+    "maximumSafeCommandThetaDeg": 2.0,
+    "maximumPredictedResidualMm": 0.05
+  },
+  "machineKinematics": {
+    "rotationCenterMachine": { "xmm": 15.0, "ymm": 16.0 },
+    "commandConvention": "RotateAboutPivotThenTranslate"
+  },
+  "productionPolicy": {
+    "requireBoardCamera": true,
+    "requirePinCamera": true,
+    "requireMotionStationary": true,
+    "requireSafetyInterlock": true,
+    "saveAllImages": true,
+    "cycleTimeoutMs": 5000
+  }
+}

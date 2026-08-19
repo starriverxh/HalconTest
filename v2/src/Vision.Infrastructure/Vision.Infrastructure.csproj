@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>VisionSystem.Infrastructure</RootNamespace>
+    <AssemblyName>VisionSystem.Infrastructure</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Vision.Domain/Vision.Domain.csproj" />
+    <ProjectReference Include="../Vision.Application/Vision.Application.csproj" />
+  </ItemGroup>
+</Project>

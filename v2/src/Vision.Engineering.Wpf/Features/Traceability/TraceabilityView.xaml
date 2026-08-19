@@ -1,0 +1,27 @@
+<UserControl x:Class="VisionSystem.Engineering.Wpf.Features.Traceability.TraceabilityView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="350" /></Grid.ColumnDefinitions>
+        <Border Style="{StaticResource PanelBorder}" Margin="0,0,10,0">
+            <Grid><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid Margin="0,0,0,8"><TextBlock FontSize="16" FontWeight="SemiBold" Text="检测周期记录" /><StackPanel HorizontalAlignment="Right" Orientation="Horizontal"><TextBox Width="190" Margin="0" Text="CycleId / SN / FailureCode" /><Button Margin="6,0,0,0" Content="查询（演示）" /></StackPanel></Grid>
+                <DataGrid Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" ItemsSource="{Binding Records}" SelectedItem="{Binding SelectedRecord}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="CycleId" Binding="{Binding CycleId}" Width="140" />
+                        <DataGridTextColumn Header="时间" Binding="{Binding Timestamp, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="160" />
+                        <DataGridTextColumn Header="产品SN" Binding="{Binding ProductId}" Width="130" />
+                        <DataGridTextColumn Header="判定" Binding="{Binding Disposition}" Width="80" />
+                        <DataGridTextColumn Header="配方" Binding="{Binding RecipeVersion}" Width="120" />
+                        <DataGridTextColumn Header="失败码" Binding="{Binding FailureCode}" Width="*" />
+                        <DataGridTextColumn Header="耗时" Binding="{Binding DurationMs, StringFormat={}{0} ms}" Width="80" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+        <StackPanel Grid.Column="1">
+            <Border Style="{StaticResource PanelBorder}" Margin="0,0,0,10"><StackPanel><TextBlock FontSize="16" FontWeight="SemiBold" Text="单件证据链" /><TextBlock Margin="0,10,0,0" MinHeight="240" FontFamily="Consolas" Foreground="{StaticResource MutedTextBrush}" Text="{Binding Detail}" TextWrapping="Wrap" /><Button Style="{StaticResource PrimaryButton}" Command="{Binding ReplaySelectedCommand}" Content="按当时版本离线重放" /></StackPanel></Border>
+            <Border Style="{StaticResource PanelBorder}"><StackPanel><TextBlock FontWeight="SemiBold" Text="不可变原则" /><TextBlock Margin="0,8,0,0" Foreground="#FDE68A" Text="候选配方重算产生新的Replay记录；绝不覆盖原生产判定、原图片或原工件版本。" TextWrapping="Wrap" /></StackPanel></Border>
+        </StackPanel>
+    </Grid>
+</UserControl>
