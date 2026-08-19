@@ -1,6 +1,8 @@
 # HalconTest：钢针插PCB视觉学习与生产骨架
 
-这是一个可运行的 **C# + HALCON Runtime + WPF** 工程。正式运行代码不再通过 HDevEngine 加载 `.hdvp`，而是直接引用 `halcondotnet.dll` 并调用 `HOperatorSet`。HDevelop文件仍保留，用于学习、算法原型和逐算子调试。
+这是一个可运行的 **C# + HALCON Runtime + WPF 离线视觉工程工作台**。它目前属于可调试的 S1 阶段，
+不代表已经通过 0.05 mm 实机量产验收。正式运行代码不再通过 HDevEngine 加载 `.hdvp`，而是直接引用
+`halcondotnet.dll` 并调用 `HOperatorSet`。HDevelop文件仍保留，用于学习、算法原型和逐算子调试。
 
 当前已实现的离线闭环：
 
@@ -43,7 +45,7 @@ Vision.Service.exe
 
 双击：`scripts\04_verify_all.cmd`
 
-验证内容包括：解决方案编译、12项 Socket/HALCON 测试、C# HalconDotNet 离线视觉闭环和 HDevelop 学习程序。
+验证内容包括：解决方案编译、17项 Socket/HALCON 测试、C# HalconDotNet 离线视觉闭环和 HDevelop 学习程序。
 
 离线视觉期望结果：
 
@@ -170,6 +172,7 @@ runtime/previews/     工作台生成的二值预览
 
 - [C# HALCON生产开发流程](docs/07-csharp-halcon-production-development.md)
 - [视觉开发工作台学习与调机 SOP](docs/08-vision-workbench-learning-sop.md)
+- [量产就绪缺口矩阵与验收门禁](docs/09-production-readiness-gap-matrix.md)
 - [需求与架构](docs/01-requirements-and-architecture.md)
 - [相机、镜头、光源选型](docs/02-optics-and-hardware-selection.md)
 - [标定和调机](docs/03-calibration-halcon-and-commissioning.md)

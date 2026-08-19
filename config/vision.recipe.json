@@ -1,5 +1,7 @@
 {
   "recipeName": "pcb-pin-row-demo",
+  "recipeVersion": 1,
+  "updatedUtc": "2026-08-19T00:00:00+08:00",
   "camera": {
     "mode": "File",
     "imagePath": "../data/offline/synthetic_pcb_good.png",
@@ -15,7 +17,30 @@
     "minRadiusPx": 15,
     "maxRadiusPx": 22,
     "minCircularity": 0.85,
-    "expectedCount": 5
+    "expectedCount": 5,
+    "searchRoi": {
+      "row1": 230,
+      "column1": 120,
+      "row2": 370,
+      "column2": 880
+    }
+  },
+  "localization": {
+    "mode": "BlobRow",
+    "modelFile": "",
+    "angleStartDeg": -10,
+    "angleExtentDeg": 20,
+    "minScore": 0.6,
+    "numLevels": 0,
+    "greediness": 0.9
+  },
+  "imageQuality": {
+    "minimumMeanGray": 20,
+    "maximumMeanGray": 240,
+    "minimumGrayDeviation": 5,
+    "minimumMeanEdgeAmplitude": 1,
+    "saturationGray": 250,
+    "maximumSaturatedFraction": 0.25
   },
   "calibration": {
     "pointsFile": "nine-point.sample.csv",

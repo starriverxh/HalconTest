@@ -236,6 +236,12 @@ public sealed class VisionTcpServer : IAsyncDisposable
             "calibrate_points" => new CommandOutcome(await WorkbenchAsync<CalibrationFitRequest, CalibrationFitResult>(
                 request, requestId, command, remoteEndpoint, stopwatch, serverToken,
                 (parameters, token) => _workbench!.FitCalibrationAsync(parameters, token)).ConfigureAwait(false), false),
+            "save_recipe" => new CommandOutcome(await WorkbenchAsync<RecipeSaveRequest, RecipeSaveResult>(
+                request, requestId, command, remoteEndpoint, stopwatch, serverToken,
+                (parameters, token) => _workbench!.SaveRecipeAsync(parameters, token)).ConfigureAwait(false), false),
+            "get_recipe" => new CommandOutcome(await WorkbenchAsync<RecipeGetRequest, RecipeSnapshotResult>(
+                request, requestId, command, remoteEndpoint, stopwatch, serverToken,
+                (parameters, token) => _workbench!.GetRecipeAsync(parameters, token)).ConfigureAwait(false), false),
             "shutdown" => Shutdown(requestId, command, remoteEndpoint, stopwatch),
             _ => new CommandOutcome(Error(requestId, command, ErrorCodes.UnknownCommand,
                 $"Unknown command '{command}'.", stopwatch.ElapsedMilliseconds), false)
@@ -399,6 +405,7 @@ public sealed class VisionTcpServer : IAsyncDisposable
                     measurement.Score,
                     measurement.ImagePath,
                     measurement.Details,
+                    measurement.FailureReasons,
                     resultPath
                 }, stopwatch.ElapsedMilliseconds);
             }

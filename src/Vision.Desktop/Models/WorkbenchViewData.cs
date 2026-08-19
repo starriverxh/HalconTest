@@ -84,6 +84,33 @@ public sealed record CalibrationPointEvaluationViewData(
     double PredictedY,
     double ErrorMm);
 
+public sealed record RecipeSaveViewData(
+    string RecipePath,
+    string RecipeName,
+    int RecipeVersion,
+    DateTimeOffset UpdatedUtc,
+    string BackupPath,
+    bool RequiresServiceRestart,
+    string ActivationMessage);
+
+public sealed record RecipeSnapshotViewData(
+    string RecipePath,
+    string RecipeName,
+    int RecipeVersion,
+    DateTimeOffset UpdatedUtc,
+    RectangleRoiData? Roi,
+    double ThresholdMin,
+    double ThresholdMax,
+    double MinRadiusPx,
+    double MaxRadiusPx,
+    double MinCircularity,
+    int ExpectedCount,
+    bool UseShapeModel,
+    string ShapeModelPath,
+    double AngleStartDeg,
+    double AngleExtentDeg,
+    double MatchMinScore);
+
 public partial class CalibrationPointRow : ObservableObject
 {
     [ObservableProperty]

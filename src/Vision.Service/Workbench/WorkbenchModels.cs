@@ -110,3 +110,50 @@ public sealed record CalibrationFitResult(
     IReadOnlyList<CalibrationPointEvaluation> Points,
     string ModelPath,
     string? CsvPath);
+
+public sealed record RecipeSaveRequest
+{
+    public int? ExpectedVersion { get; init; }
+    public RectangleRoi? Roi { get; init; }
+    public double ThresholdMin { get; init; }
+    public double ThresholdMax { get; init; } = 65;
+    public double MinRadiusPx { get; init; } = 15;
+    public double MaxRadiusPx { get; init; } = 22;
+    public double MinCircularity { get; init; } = 0.85;
+    public int ExpectedCount { get; init; } = 5;
+    public bool UseShapeModel { get; init; }
+    public string ShapeModelPath { get; init; } = string.Empty;
+    public double AngleStartDeg { get; init; } = -10;
+    public double AngleExtentDeg { get; init; } = 20;
+    public double MatchMinScore { get; init; } = 0.6;
+}
+
+public sealed record RecipeSaveResult(
+    string RecipePath,
+    string RecipeName,
+    int RecipeVersion,
+    DateTimeOffset UpdatedUtc,
+    string BackupPath,
+    bool RequiresServiceRestart,
+    string ActivationMessage);
+
+
+public sealed record RecipeGetRequest;
+
+public sealed record RecipeSnapshotResult(
+    string RecipePath,
+    string RecipeName,
+    int RecipeVersion,
+    DateTimeOffset UpdatedUtc,
+    RectangleRoi? Roi,
+    double ThresholdMin,
+    double ThresholdMax,
+    double MinRadiusPx,
+    double MaxRadiusPx,
+    double MinCircularity,
+    int ExpectedCount,
+    bool UseShapeModel,
+    string ShapeModelPath,
+    double AngleStartDeg,
+    double AngleExtentDeg,
+    double MatchMinScore);

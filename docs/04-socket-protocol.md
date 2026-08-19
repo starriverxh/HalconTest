@@ -67,6 +67,8 @@ HALCON后端当前返回：
 | `create_template` | 创建并保存形状模型 | `create_shape_model`, `write_shape_model` |
 | `match_template` | 读取并匹配形状模型 | `read_shape_model`, `find_shape_model` |
 | `calibrate_points` | 用示教点拟合并保存标定 | `vector_to_hom_mat2d`, `affine_trans_point_2d` |
+| `save_recipe` | 版本检查、备份并原子固化生产参数 | 配方生命周期（非HALCON算子） |
+| `get_recipe` | 读取磁盘配方版本和工程参数，防止旧界面覆盖新版本 | 配方生命周期（非HALCON算子） |
 
 例如 Blob 预览：
 

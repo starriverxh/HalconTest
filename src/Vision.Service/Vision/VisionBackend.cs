@@ -9,7 +9,10 @@ public interface IVisionBackend : IAsyncDisposable
     Task<VisionResult> TriggerAsync(string requestId, JsonElement? parameters, CancellationToken cancellationToken);
 }
 
-public sealed class HalconVisionBackend(PinInspectionService inspectionService, IAsyncDisposable cameraLifetime) : IVisionBackend
+public sealed class HalconVisionBackend(
+    PinInspectionService inspectionService,
+    IAsyncDisposable cameraLifetime,
+    IDisposable? algorithmLifetime = null) : IVisionBackend
 {
     public string Name => "halcondotnet";
     public bool IsReady => inspectionService.IsReady;
@@ -23,7 +26,11 @@ public sealed class HalconVisionBackend(PinInspectionService inspectionService, 
         return inspectionService.InspectAsync(requestId, imagePath, cancellationToken);
     }
 
-    public ValueTask DisposeAsync() => cameraLifetime.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        algorithmLifetime?.Dispose();
+        await cameraLifetime.DisposeAsync().ConfigureAwait(false);
+    }
 
     private static string? ReadString(JsonElement? parameters, string propertyName) =>
         parameters is { ValueKind: JsonValueKind.Object } value &&

@@ -2,9 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "HALCON C# pin insertion vision recipe",
   "type": "object",
-  "required": ["recipeName", "camera", "holeDetection", "calibration", "toolReferencePose", "tolerances"],
+  "required": ["recipeName", "recipeVersion", "camera", "holeDetection", "imageQuality", "localization", "calibration", "toolReferencePose", "tolerances"],
   "properties": {
     "recipeName": { "type": "string", "minLength": 1 },
+    "recipeVersion": { "type": "integer", "minimum": 1 },
+    "updatedUtc": { "type": "string", "format": "date-time" },
     "camera": {
       "type": "object",
       "required": ["mode", "imagePath"],
@@ -20,7 +22,26 @@
     },
     "holeDetection": {
       "type": "object",
-      "required": ["thresholdMin", "thresholdMax", "minRadiusPx", "maxRadiusPx", "minCircularity", "expectedCount"]
+      "required": ["thresholdMin", "thresholdMax", "minRadiusPx", "maxRadiusPx", "minCircularity", "expectedCount"],
+      "properties": {
+        "searchRoi": {
+          "type": ["object", "null"],
+          "required": ["row1", "column1", "row2", "column2"]
+        }
+      }
+    },
+    "localization": {
+      "type": "object",
+      "required": ["mode", "modelFile", "angleStartDeg", "angleExtentDeg", "minScore"],
+      "properties": {
+        "mode": { "enum": ["BlobRow", "ShapeModel"] },
+        "modelFile": { "type": "string" },
+        "minScore": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "imageQuality": {
+      "type": "object",
+      "required": ["minimumMeanGray", "maximumMeanGray", "minimumGrayDeviation", "minimumMeanEdgeAmplitude", "saturationGray", "maximumSaturatedFraction"]
     },
     "calibration": {
       "type": "object",

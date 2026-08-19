@@ -8,4 +8,5 @@ public sealed record InspectionViewData(
     double Score,
     string? ImagePath,
     string? ResultPath,
-    long DurationMs);
+    long DurationMs,
+    IReadOnlyList<string> FailureReasons);

@@ -180,9 +180,10 @@ runtime/models/         HALCON .shm 模型
 runtime/calibration/    标定 JSON 和示教 CSV
 ```
 
-Blob 参数最终写入 `config/vision.recipe.json`。模板路径、匹配阈值、模型版本等下一阶段应作为配方字段
-加入并经过权限控制。量产配方应有版本号、产品型号、创建人、验证时间和回退版本；操作员只能切换
-已批准配方，工程师才允许修改。
+点击“保存为带版本生产配方”后，Blob ROI/参数和 `BlobRow/ShapeModel` 定位模式会原子写入
+`config/vision.recipe.json`，旧版本保存在 `runtime/recipe-history/`。为避免生产周期中途切换算法，
+当前实现要求重启 `Vision.Service` 才激活新版本。量产批准前仍应继续增加审批、权限和受控回滚；
+操作员只能切换已批准配方，工程师才允许修改。
 
 ## 8. 从离线图切换到真实相机
 

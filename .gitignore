@@ -11,6 +11,7 @@ runtime/images/
 runtime/calibration/
 runtime/models/
 runtime/previews/
+runtime/recipe-history/
 halcon/calibration/*.dat
 halcon/models/*.shm
 halcon/models/*.ncm

@@ -4,6 +4,17 @@ namespace Vision.Service.Vision;
 
 public sealed class CoordinateTransformer(CalibrationModel calibration)
 {
+    public MachinePoint Transform(double row, double column)
+    {
+        using var homMat2D = new HTuple(calibration.HomMat2D);
+        HOperatorSet.AffineTransPoint2d(homMat2D, column, row, out HTuple machineX, out HTuple machineY);
+        using (machineX)
+        using (machineY)
+        {
+            return new MachinePoint(machineX.D, machineY.D);
+        }
+    }
+
     public IReadOnlyList<MachinePoint> Transform(IReadOnlyList<ImagePoint> imagePoints)
     {
         if (imagePoints.Count == 0)

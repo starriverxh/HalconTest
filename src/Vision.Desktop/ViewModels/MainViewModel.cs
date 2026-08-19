@@ -66,6 +66,9 @@ public partial class MainViewModel : ObservableObject
     private string _duration = "--";
 
     [ObservableProperty]
+    private string _failureSummary = "--";
+
+    [ObservableProperty]
     private ImageSource? _previewImage;
 
     [ObservableProperty]
@@ -75,7 +78,10 @@ public partial class MainViewModel : ObservableObject
     private bool _isBusy;
 
     [ObservableProperty]
-    private RectangleRoiData? _currentRoi;
+    private RectangleRoiData? _processingRoi;
+
+    [ObservableProperty]
+    private RectangleRoiData? _templateRoi;
 
     [ObservableProperty]
     private IReadOnlyList<VisionOverlay> _processingOverlays = [];
@@ -129,6 +135,18 @@ public partial class MainViewModel : ObservableObject
     private string _templateSummary = "画 ROI 创建 .shm 模型，然后在当前图片中匹配。";
 
     [ObservableProperty]
+    private int _expectedHoleCount = 5;
+
+    [ObservableProperty]
+    private bool _useShapeModelForProduction;
+
+    [ObservableProperty]
+    private int _recipeVersion;
+
+    [ObservableProperty]
+    private string _recipeSaveStatus = "工程参数尚未固化到生产配方。";
+
+    [ObservableProperty]
     private ImageCoordinate? _selectedCalibrationImagePoint;
 
     [ObservableProperty]
@@ -169,8 +187,10 @@ public partial class MainViewModel : ObservableObject
         await ExecuteAsync(async cancellationToken =>
         {
             var message = await _serviceClient.PingAsync(Host, Port, cancellationToken);
+            var recipe = await _serviceClient.GetRecipeAsync(Host, Port, cancellationToken);
+            ApplyRecipeSnapshot(recipe);
             ConnectionStatus = "已连接";
-            AddLog($"PING 成功：{message}");
+            AddLog($"PING 成功：{message}；已载入生产配方 {recipe.RecipeName} v{recipe.RecipeVersion}。");
         });
     }
 
@@ -191,12 +211,16 @@ public partial class MainViewModel : ObservableObject
             CorrectionTheta = result.Theta.ToString("+0.000;-0.000;0.000", CultureInfo.InvariantCulture) + "°";
             Score = result.Score.ToString("0.000", CultureInfo.InvariantCulture);
             Duration = result.DurationMs + " ms";
+            FailureSummary = result.FailureReasons.Count == 0
+                ? "无失败原因"
+                : string.Join(" / ", result.FailureReasons);
             if (result.ImagePath is { Length: > 0 } savedImagePath && File.Exists(savedImagePath))
             {
                 PreviewImage = LoadBitmap(savedImagePath);
             }
 
-            AddLog($"检测 {InspectionStatus}：X={CorrectionX}, Y={CorrectionY}, T={CorrectionTheta}, Score={Score}");
+            AddLog($"检测 {InspectionStatus}：X={CorrectionX}, Y={CorrectionY}, T={CorrectionTheta}, " +
+                   $"Score={Score}, Reasons={FailureSummary}");
         });
     }
 
@@ -216,7 +240,8 @@ public partial class MainViewModel : ObservableObject
         SelectedImagePath = dialog.FileName;
         PreviewImage = LoadBitmap(dialog.FileName);
         ProcessingPreviewImage = PreviewImage;
-        CurrentRoi = null;
+        ProcessingRoi = null;
+        TemplateRoi = null;
         ProcessingOverlays = [];
         TemplateOverlays = [];
         _binaryPreviewPath = null;
@@ -226,7 +251,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ClearRoi()
     {
-        CurrentRoi = null;
+        ProcessingRoi = null;
         AddLog("ROI 已清除；空 ROI 表示对整幅图处理。");
     }
 
@@ -237,11 +262,11 @@ public partial class MainViewModel : ObservableObject
         {
             EnsureImageSelected();
             var result = await _serviceClient.PreviewProcessingAsync(
-                Host, Port, SelectedImagePath, CurrentRoi,
+                Host, Port, SelectedImagePath, ProcessingRoi,
                 ThresholdMin, ThresholdMax, MinRadiusPx, MaxRadiusPx, MinCircularity,
                 cancellationToken);
             _binaryPreviewPath = result.BinaryPreviewPath;
-            CurrentRoi = result.Roi;
+            ProcessingRoi = result.Roi;
             ProcessingOverlays = result.Points.Select((point, index) => new VisionOverlay(
                 point.Row, point.Column, point.RadiusPx,
                 $"#{index + 1} C={point.Score:F3}")).ToArray();
@@ -275,13 +300,13 @@ public partial class MainViewModel : ObservableObject
         await ExecuteAsync(async cancellationToken =>
         {
             EnsureImageSelected();
-            if (CurrentRoi is null)
+            if (TemplateRoi is null)
             {
                 throw new InvalidOperationException("请先在模板页图像上拖出矩形 ROI。");
             }
 
             var result = await _serviceClient.CreateShapeModelAsync(
-                Host, Port, SelectedImagePath, CurrentRoi, ModelName,
+                Host, Port, SelectedImagePath, TemplateRoi, ModelName,
                 ModelAngleStartDeg, ModelAngleExtentDeg, ModelContrast, cancellationToken);
             ShapeModelPath = result.ModelPath;
             TemplateOverlays =
@@ -317,6 +342,58 @@ public partial class MainViewModel : ObservableObject
                 : $"找到 {result.Matches.Count} 个实例；最佳分数 {result.Matches[0].Score:F3}，" +
                   $"角度 {result.Matches[0].AngleDeg:F3}°，耗时 {result.ProcessingTimeMs} ms。";
             AddLog($"模板匹配完成：{result.Matches.Count} 个结果。");
+        });
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private async Task SaveProductionRecipeAsync()
+    {
+        await ExecuteAsync(async cancellationToken =>
+        {
+            if (ProcessingRoi is null)
+            {
+                throw new InvalidOperationException("量产配方必须先定义独立的 Blob 搜索 ROI。");
+            }
+
+            if (UseShapeModelForProduction &&
+                (string.IsNullOrWhiteSpace(ShapeModelPath) || !File.Exists(ShapeModelPath)))
+            {
+                throw new InvalidOperationException("选择 ShapeModel 量产定位前，必须先创建有效的 .shm 模型。");
+            }
+
+            var result = await _serviceClient.SaveRecipeAsync(
+                Host,
+                Port,
+                RecipeVersion > 0 ? RecipeVersion : null,
+                ProcessingRoi,
+                ThresholdMin,
+                ThresholdMax,
+                MinRadiusPx,
+                MaxRadiusPx,
+                MinCircularity,
+                ExpectedHoleCount,
+                UseShapeModelForProduction,
+                ShapeModelPath,
+                ModelAngleStartDeg,
+                ModelAngleExtentDeg,
+                MatchMinScore,
+                cancellationToken);
+            RecipeVersion = result.RecipeVersion;
+            RecipeSaveStatus =
+                $"已保存 {result.RecipeName} v{result.RecipeVersion}。历史备份：{result.BackupPath}。" +
+                (result.RequiresServiceRestart ? " 必须重启 Vision.Service 才会激活。" : string.Empty);
+            AddLog($"生产配方原子保存成功：v{result.RecipeVersion}；当前运行实例尚未热切换。");
+        });
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private async Task LoadProductionRecipeAsync()
+    {
+        await ExecuteAsync(async cancellationToken =>
+        {
+            var recipe = await _serviceClient.GetRecipeAsync(Host, Port, cancellationToken);
+            ApplyRecipeSnapshot(recipe);
+            AddLog($"已从磁盘重新载入配方 {recipe.RecipeName} v{recipe.RecipeVersion}。此次载入只更新工程界面。 ");
         });
     }
 
@@ -451,6 +528,8 @@ public partial class MainViewModel : ObservableObject
         MatchTemplateCommand.NotifyCanExecuteChanged();
         FitCalibrationCommand.NotifyCanExecuteChanged();
         SnapCalibrationPointCommand.NotifyCanExecuteChanged();
+        SaveProductionRecipeCommand.NotifyCanExecuteChanged();
+        LoadProductionRecipeCommand.NotifyCanExecuteChanged();
     }
 
     private async Task ExecuteAsync(Func<CancellationToken, Task> action)
@@ -512,6 +591,29 @@ public partial class MainViewModel : ObservableObject
             $"P{index + 1} ({point.MachineX:F2},{point.MachineY:F2})",
             point.UseForFit ? "#A78BFA" : "#F59E0B",
             "cross")).ToArray();
+    }
+
+    private void ApplyRecipeSnapshot(RecipeSnapshotViewData recipe)
+    {
+        RecipeVersion = recipe.RecipeVersion;
+        ProcessingRoi = recipe.Roi;
+        ThresholdMin = recipe.ThresholdMin;
+        ThresholdMax = recipe.ThresholdMax;
+        MinRadiusPx = recipe.MinRadiusPx;
+        MaxRadiusPx = recipe.MaxRadiusPx;
+        MinCircularity = recipe.MinCircularity;
+        ExpectedHoleCount = recipe.ExpectedCount;
+        UseShapeModelForProduction = recipe.UseShapeModel;
+        if (!string.IsNullOrWhiteSpace(recipe.ShapeModelPath))
+        {
+            ShapeModelPath = recipe.ShapeModelPath;
+        }
+
+        ModelAngleStartDeg = recipe.AngleStartDeg;
+        ModelAngleExtentDeg = recipe.AngleExtentDeg;
+        MatchMinScore = recipe.MatchMinScore;
+        RecipeSaveStatus =
+            $"磁盘配方：{recipe.RecipeName} v{recipe.RecipeVersion}，更新时间 {recipe.UpdatedUtc.LocalDateTime:yyyy-MM-dd HH:mm:ss}。";
     }
 
     private void AddCalibrationRow(CalibrationPointRow row)

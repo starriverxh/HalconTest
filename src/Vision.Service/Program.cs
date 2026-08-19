@@ -15,7 +15,7 @@ public static class Program
         {
             var options = ServiceOptions.Parse(args);
             await using var backend = await CreateBackendAsync(options).ConfigureAwait(false);
-            var workbench = new VisionWorkbenchService(options.RuntimeDirectory);
+            var workbench = new VisionWorkbenchService(options.RuntimeDirectory, options.RecipePath);
             await using var server = new VisionTcpServer(options, backend, workbench);
             using var shutdownSource = new CancellationTokenSource();
             Console.CancelKeyPress += (_, eventArgs) =>
@@ -55,11 +55,14 @@ public static class Program
             .ConfigureAwait(false);
         var camera = new HalconCamera(recipe.Camera);
         await camera.OpenAsync().ConfigureAwait(false);
+        var shapeModelLocator = new ShapeModelLocator(recipe.Localization);
         var inspectionService = new PinInspectionService(
             camera,
+            new ImageQualityInspector(),
             new PcbHoleLocator(),
             new PinTipLocator(),
             new CoordinateTransformer(calibration),
+            shapeModelLocator,
             new XYThetaCalculator(),
             new ImageStore(options.RuntimeDirectory),
             recipe,
@@ -68,6 +71,6 @@ public static class Program
         Console.WriteLine(
             $"Recipe '{recipe.RecipeName}', calibration RMSE={calibration.RmseMm:F6} mm, " +
             $"validation max={calibration.MaxValidationErrorMm:F6} mm.");
-        return new HalconVisionBackend(inspectionService, camera);
+        return new HalconVisionBackend(inspectionService, camera, shapeModelLocator);
     }
 }

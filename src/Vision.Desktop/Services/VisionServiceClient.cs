@@ -50,7 +50,10 @@ public sealed class VisionServiceClient
             data.GetProperty("score").GetDouble(),
             data.TryGetProperty("imagePath", out var savedImage) ? savedImage.GetString() : null,
             data.TryGetProperty("resultPath", out var resultPath) ? resultPath.GetString() : null,
-            root.GetProperty("durationMs").GetInt64());
+            root.GetProperty("durationMs").GetInt64(),
+            data.TryGetProperty("failureReasons", out var failureReasons) && failureReasons.ValueKind == JsonValueKind.Array
+                ? failureReasons.EnumerateArray().Select(item => item.GetString() ?? "UNKNOWN").ToArray()
+                : []);
     }
 
     public Task<ProcessingViewData> PreviewProcessingAsync(
@@ -137,6 +140,51 @@ public sealed class VisionServiceClient
             modelPath,
             csvPath
         }, cancellationToken);
+
+    public Task<RecipeSaveViewData> SaveRecipeAsync(
+        string host,
+        int port,
+        int? expectedVersion,
+        RectangleRoiData roi,
+        double thresholdMin,
+        double thresholdMax,
+        double minRadiusPx,
+        double maxRadiusPx,
+        double minCircularity,
+        int expectedCount,
+        bool useShapeModel,
+        string shapeModelPath,
+        double angleStartDeg,
+        double angleExtentDeg,
+        double matchMinScore,
+        CancellationToken cancellationToken = default) =>
+        SendWorkbenchAsync<RecipeSaveViewData>(host, port, "save_recipe", new
+        {
+            expectedVersion,
+            roi,
+            thresholdMin,
+            thresholdMax,
+            minRadiusPx,
+            maxRadiusPx,
+            minCircularity,
+            expectedCount,
+            useShapeModel,
+            shapeModelPath,
+            angleStartDeg,
+            angleExtentDeg,
+            matchMinScore
+        }, cancellationToken);
+
+    public Task<RecipeSnapshotViewData> GetRecipeAsync(
+        string host,
+        int port,
+        CancellationToken cancellationToken = default) =>
+        SendWorkbenchAsync<RecipeSnapshotViewData>(
+            host,
+            port,
+            "get_recipe",
+            new { },
+            cancellationToken);
 
     private static async Task<T> SendWorkbenchAsync<T>(
         string host,

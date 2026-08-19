@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using HalconDotNet;
 using Vision.Service.Vision;
+using Vision.Service.Configuration;
 
 namespace Vision.Service.Workbench;
 
@@ -10,11 +11,16 @@ namespace Vision.Service.Workbench;
 /// same operators that are later frozen into a production recipe; the UI itself
 /// never performs vision calculations.
 /// </summary>
-public sealed class VisionWorkbenchService(string runtimeDirectory) : IVisionWorkbench
+public sealed class VisionWorkbenchService(
+    string runtimeDirectory,
+    string? recipePath = null) : IVisionWorkbench
 {
     private readonly string _previewDirectory = CreateDirectory(runtimeDirectory, "previews");
     private readonly string _modelDirectory = CreateDirectory(runtimeDirectory, "models");
     private readonly string _calibrationDirectory = CreateDirectory(runtimeDirectory, "calibration");
+    private readonly RecipeStore? _recipeStore = string.IsNullOrWhiteSpace(recipePath)
+        ? null
+        : new RecipeStore(recipePath, runtimeDirectory);
 
     public Task<ProcessingResult> PreviewProcessingAsync(
         ProcessingRequest request,
@@ -322,6 +328,30 @@ public sealed class VisionWorkbenchService(string runtimeDirectory) : IVisionWor
         }
 
         return result with { CsvPath = csvPath };
+    }
+
+    public Task<RecipeSaveResult> SaveRecipeAsync(
+        RecipeSaveRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (_recipeStore is null)
+        {
+            throw new InvalidOperationException("The workbench was started without a configured recipe path.");
+        }
+
+        return _recipeStore.SaveEngineeringAsync(request, cancellationToken);
+    }
+
+    public Task<RecipeSnapshotResult> GetRecipeAsync(
+        RecipeGetRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (_recipeStore is null)
+        {
+            throw new InvalidOperationException("The workbench was started without a configured recipe path.");
+        }
+
+        return _recipeStore.GetSnapshotAsync(cancellationToken);
     }
 
     private static HObject ToGray(HObject image)

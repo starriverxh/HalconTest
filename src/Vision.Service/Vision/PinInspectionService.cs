@@ -7,9 +7,11 @@ namespace Vision.Service.Vision;
 
 public sealed class PinInspectionService(
     ICamera camera,
+    ImageQualityInspector imageQualityInspector,
     PcbHoleLocator holeLocator,
     PinTipLocator pinTipLocator,
     CoordinateTransformer coordinateTransformer,
+    ShapeModelLocator shapeModelLocator,
     XYThetaCalculator correctionCalculator,
     ImageStore imageStore,
     VisionRecipe recipe,
@@ -37,12 +39,18 @@ public sealed class PinInspectionService(
                     analysisImage = grayImage;
                 }
 
+                var imageQuality = imageQualityInspector.Inspect(analysisImage, recipe.ImageQuality);
                 var holes = holeLocator.Locate(analysisImage, recipe.HoleDetection);
                 var machinePoints = coordinateTransformer.Transform(holes);
-                var boardPose = CalculateBoardPose(machinePoints, holes);
+                var blobBoardPose = CalculateBoardPose(machinePoints, holes);
+                var shapeBoardPose = recipe.Localization.Mode.Equals("ShapeModel", StringComparison.OrdinalIgnoreCase)
+                    ? shapeModelLocator.Locate(analysisImage, coordinateTransformer)
+                    : null;
+                var boardPose = shapeBoardPose ?? blobBoardPose;
                 var toolPose = pinTipLocator.Locate(recipe.ToolReferencePose);
                 var correction = correctionCalculator.Calculate(boardPose, toolPose);
-                var isOk = Evaluate(holes.Count, boardPose.Score, correction);
+                var failureReasons = Evaluate(imageQuality, holes.Count, boardPose.Score, correction);
+                var isOk = failureReasons.Count == 0;
                 var imagePath = await imageStore.SaveAsync(
                     image,
                     requestId,
@@ -59,17 +67,24 @@ public sealed class PinInspectionService(
                     new Dictionary<string, object?>
                     {
                         ["recipe"] = recipe.RecipeName,
+                        ["recipeVersion"] = recipe.RecipeVersion,
                         ["camera"] = camera.Name,
+                        ["imageQuality"] = imageQuality,
                         ["holeCount"] = holes.Count,
                         ["expectedHoleCount"] = recipe.HoleDetection.ExpectedCount,
                         ["imagePoints"] = holes,
                         ["machinePoints"] = machinePoints,
+                        ["localizationMode"] = recipe.Localization.Mode,
+                        ["blobBoardPose"] = blobBoardPose,
+                        ["shapeBoardPose"] = shapeBoardPose,
                         ["boardPose"] = boardPose,
                         ["toolPose"] = toolPose,
                         ["calibrationRmseMm"] = calibration.RmseMm,
                         ["calibrationMaxFitErrorMm"] = calibration.MaxFitErrorMm,
-                        ["calibrationMaxValidationErrorMm"] = calibration.MaxValidationErrorMm
-                    });
+                        ["calibrationMaxValidationErrorMm"] = calibration.MaxValidationErrorMm,
+                        ["failureReasons"] = failureReasons
+                    },
+                    failureReasons);
             }
             finally
             {
@@ -96,12 +111,44 @@ public sealed class PinInspectionService(
             imagePoints.Min(point => point.Score));
     }
 
-    private bool Evaluate(int holeCount, double score, XYThetaCorrection correction) =>
-        holeCount == recipe.HoleDetection.ExpectedCount &&
-        score >= recipe.Tolerances.MinimumFeatureScore &&
-        Math.Abs(correction.Xmm) <= recipe.Tolerances.MaxCorrectionMm &&
-        Math.Abs(correction.Ymm) <= recipe.Tolerances.MaxCorrectionMm &&
-        Math.Abs(correction.ThetaDeg) <= recipe.Tolerances.MaxRotationDeg &&
-        calibration.RmseMm <= recipe.Tolerances.MaxCalibrationRmseMm &&
-        calibration.MaxValidationErrorMm <= recipe.Tolerances.MaxCalibrationErrorMm;
+    private IReadOnlyList<string> Evaluate(
+        ImageQualityResult imageQuality,
+        int holeCount,
+        double score,
+        XYThetaCorrection correction)
+    {
+        var failures = new List<string>(imageQuality.FailureReasons);
+        if (holeCount != recipe.HoleDetection.ExpectedCount)
+        {
+            failures.Add("HOLE_COUNT_MISMATCH");
+        }
+
+        if (score < recipe.Tolerances.MinimumFeatureScore)
+        {
+            failures.Add("LOW_FEATURE_SCORE");
+        }
+
+        if (Math.Abs(correction.Xmm) > recipe.Tolerances.MaxCorrectionMm)
+        {
+            failures.Add("X_CORRECTION_OUT_OF_RANGE");
+        }
+
+        if (Math.Abs(correction.Ymm) > recipe.Tolerances.MaxCorrectionMm)
+        {
+            failures.Add("Y_CORRECTION_OUT_OF_RANGE");
+        }
+
+        if (Math.Abs(correction.ThetaDeg) > recipe.Tolerances.MaxRotationDeg)
+        {
+            failures.Add("THETA_CORRECTION_OUT_OF_RANGE");
+        }
+
+        if (calibration.RmseMm > recipe.Tolerances.MaxCalibrationRmseMm ||
+            calibration.MaxValidationErrorMm > recipe.Tolerances.MaxCalibrationErrorMm)
+        {
+            failures.Add("CALIBRATION_INVALID");
+        }
+
+        return failures;
+    }
 }
