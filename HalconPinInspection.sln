@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Vision.Service.Tests", "tes
 		{B6B1E85E-A330-4A52-B609-1567B3F791A1} = {B6B1E85E-A330-4A52-B609-1567B3F791A1}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{B5AC5774-79E8-4CA4-BAFD-C254EA5385AF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,5 +31,12 @@ Global
 		{7DCB45DA-1379-4C08-B49E-4232E65BF34F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7DCB45DA-1379-4C08-B49E-4232E65BF34F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7DCB45DA-1379-4C08-B49E-4232E65BF34F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5AC5774-79E8-4CA4-BAFD-C254EA5385AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5AC5774-79E8-4CA4-BAFD-C254EA5385AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5AC5774-79E8-4CA4-BAFD-C254EA5385AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5AC5774-79E8-4CA4-BAFD-C254EA5385AF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

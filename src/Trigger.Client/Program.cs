@@ -6,10 +6,6 @@ namespace Trigger.Client;
 
 public static class Program
 {
-    static int Test = 0;
-    static int Test = 0;
-    static int Test = 0;
-    static int Test = 0;
     private static readonly JsonSerializerOptions RequestJsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = false
